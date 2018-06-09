@@ -329,7 +329,8 @@ void DataMng::saveProductsToDB(ProductList & productList)
 // Method: storeTaskStatusSpectra
 // Store task agent spectra in DB
 //----------------------------------------------------------------------
-void DataMng::storeTaskStatusSpectra(json & fmkInfoValue)
+void DataMng::storeTaskStatusSpectra(json & fmkInfoValue,
+                                     std::map<std::pair<std::string, TaskStatus>, int> * aborted)
 {
     TskStatTable tssSet;
     
@@ -347,6 +348,9 @@ void DataMng::storeTaskStatusSpectra(json & fmkInfoValue)
                                ag["stopped"].asInt(),
                                ag["failed"].asInt(),
                                ag["finished"].asInt());
+            if (aborted != 0) {
+                tss.running -= (*aborted)[std::make_pair(agNme, TASK_RUNNING)];
+            }            
             tssSet.push_back(std::make_pair(agNme, tss));
         }
     }
@@ -557,8 +561,6 @@ bool DataMng::getProductLatest(std::string prodType,
     return retVal;
 }
 
-
-
 //----------------------------------------------------------------------
 // Method: processInDataMsg
 //----------------------------------------------------------------------
@@ -574,3 +576,48 @@ void DataMng::txInDataToLocalArch(ProductList & inData)
     // Save to DB
     saveProductsToDB(inData);
 }
+
+//----------------------------------------------------------------------
+// Method: getRestartableTaskInputs
+// Returns the list of inputs that triggered the creation of new tasks,
+// for the tasks that appear as scheduled or running in the database,
+// at the start of the Core
+//----------------------------------------------------------------------
+bool DataMng::getRestartableTaskInputs(ProductList & inputFiles,
+                                       std::map<std::pair<std::string, TaskStatus>, int> * aborted)
+{
+    bool retVal = true;
+    std::unique_ptr<DBHandler> dbHdl(new DBHdlPostgreSQL);
+    
+    std::map<int,TaskInfo> taskSet;
+    
+    try {
+        // Check that connection with the DB is possible
+        dbHdl->openConnection();
+        
+        // Try to get tasks that must be restarted at core start time
+        if (! dbHdl->retrieveRestartableTasks(taskSet, aborted)) { return false; }
+
+    } catch (RuntimeException & e) {
+        ErrMsg(e.what());
+        retVal = false;
+    }
+
+    // Close connection
+    dbHdl->closeConnection();
+
+    // A set of tasks have been retrieved, re-build these tasks
+    for (auto & kv : taskSet) {
+        int id = kv.first;
+        TaskInfo & task = kv.second;
+        ProductMetadata m(task["inputs"][0]);
+        m["dirName"]  = cfg.storage.archive;
+        m["urlSpace"] = LocalArchSpace;
+        m["url"]      = ("file://" + cfg.storage.archive + "/" +
+                         m.baseName() + "." + m.extension());
+        inputFiles.products.push_back(m);
+    }    
+        
+    return retVal;
+}
+

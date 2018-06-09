@@ -142,6 +142,11 @@ public:
     ProductMetadata & fromLocalArch2ExportLocation();
     
     //----------------------------------------------------------------------
+    // Method: resetUrl2LocalArch
+    //----------------------------------------------------------------------
+    ProductMetadata & resetUrl2LocalArch();
+    
+    //----------------------------------------------------------------------
     // Method: sendToVOSpace
     //----------------------------------------------------------------------
     bool sendToVOSpace(std::string user, std::string pwd,

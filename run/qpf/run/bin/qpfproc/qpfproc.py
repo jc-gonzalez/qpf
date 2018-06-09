@@ -83,17 +83,42 @@ class Processor(object):
     QPFDckImageProcPath = "/qlabin"
 
     @staticmethod
-    def call(task_dir, cmd_line, out_file):
+    def call(task_dir, cmd_line, out_file,
+             get_stdout=True, get_stderr=True, bg=True):
         '''
         Actual method calling the process
         '''
-        logging.debug(">>> Trying to run\n>>> '%s'\n>>> in\n>>> '%s'\n",
-                      cmd_line, task_dir)
+        logging.info(">>> Trying to run\n>>> '%s'\n>>> in\n>>> '%s'\n",
+                    cmd_line, task_dir)
         os.chdir(task_dir)
-        proc = subprocess.Popen(cmd_line, stdout=subprocess.PIPE, shell=True)
-        out_str, err_str = proc.communicate()
-        with open(out_file, 'w') as f_handler:
-            f_handler.write(out_str)
+
+        #cmd = [c for c in cmd_line.split() if c != '']
+        #os.execvp(cmd[0], cmd)
+        get_stdout |= get_stderr
+        if get_stdout:
+            cmd_line += ' 1>{}'.format(out_file)
+        if get_stderr:
+            cmd_line += ' 2>&1'
+        if bg:
+            cmd_line += ' &'
+
+        open(out_file, 'a').close()
+            
+        output = subprocess.check_output(cmd_line, shell=True)
+
+    @staticmethod
+    def run_subprocess(task_dir, cmd_line, out_file, wait_until_end=False):
+        try:
+            pid = os.fork()
+        except OSError:
+            logging.fatal('Could not create a child process')
+     
+        if pid == 0:
+            Processor.call(task_dir, cmd_line, out_file)
+            exit()
+
+        if wait_until_end:
+            finished = os.waitpid(0, 0)
 
     @staticmethod
     def substitute(in_var, rule):
@@ -252,13 +277,17 @@ class Processor(object):
             use_containers = self.cfg['container']
         else:
             use_containers = container
-
+        
         if not use_containers:
-            out_file = self.task_dir + "/" + self.processor + ".nfo"
+            ofile = self.task_dir + "/" + self.processor + ".nfo"
             call_cmd_line = cmd_line
         else:
-            out_file = self.task_dir + "/docker.id"
+            ofile = self.task_dir + "/docker.id"
             call_cmd_line = "docker run {0} {1} {2} {3} 2>&1 "\
                 .format(self.dck_opts, self.mapping, self.dck_image, cmd_line)
+        logging.info('Usage of containers: {}ABLED'
+                     .format('EN' if use_containers else 'DIS'))
 
-        Processor.call(self.task_dir, call_cmd_line, out_file)
+        Processor.run_subprocess(task_dir=self.task_dir,
+                                 cmd_line=call_cmd_line,
+                                 out_file=ofile)

@@ -111,14 +111,24 @@ public:
     // Method: storeTaskStatusSpectra
     // Store task agent spectra in DB
     //----------------------------------------------------------------------
-    void storeTaskStatusSpectra(json & fmkInfoValue);
+    void storeTaskStatusSpectra(json & fmkInfoValue,
+                                std::map<std::pair<std::string, TaskStatus>, int> * aborted = 0);
     
     //----------------------------------------------------------------------
     // Method: retrieveTaskStatusSpectra
     // Retrieve task agent spectra from DB
     //----------------------------------------------------------------------
     void retrieveTaskStatusSpectra(TskStatTable & tssSet);
-    
+
+    //----------------------------------------------------------------------
+    // Method: getRestartableTaskInputs
+    // Returns the list of inputs that triggered the creation of new tasks,
+    // for the tasks that appear as scheduled or running in the database,
+    // at the start of the Core
+    //----------------------------------------------------------------------
+    bool getRestartableTaskInputs(ProductList & inputFiles, 
+                                  std::map<std::pair<std::string, TaskStatus>, int> * aborted);
+
 protected:
 
     //----------------------------------------------------------------------

@@ -56,8 +56,31 @@ startDaemon() {
         echo -e "${_ONERR}Error: $daemonName is already running.${_OFF}"
         exit 1
     fi
-    log '*** '`date +"%Y-%m-%d"`": Starting up $daemonName."
+    log '______________________________________________________________________'
+    log '*** '`date +"%Y-%m-%d %H:%M:%S"`": Starting up $daemonName."
     $cmd 1>>${logFile} 2>&1 & srvPid=$!
+    echo "Starting $daemonName with PID: $srvPid."
+    echo "$srvPid" > "$pidFile"
+}
+
+startDaemonDebug() {
+    local srv=$1
+    local pidDir=$2
+    local daemonName=$3
+    local cmd=$4
+    pidFile="${pidDir}/${srv}.pid"
+    logFile="${pidDir}/${srv}.log"
+    # Start the daemon.
+    setupDaemon "$srv" "$pidDir"
+    checkDaemon "$srv" "$pidDir"
+    if [[ $? -eq 1 ]]; then
+        echo -e "${_ONERR}Error: $daemonName is already running.${_OFF}"
+        exit 1
+    fi
+    log '______________________________________________________________________'
+    log '*** '`date +"%Y-%m-%d %H:%M:%S"`": Starting up $daemonName."
+    $cmd 1>>${logFile} 2>&1 & srvPid=$!
+    xterm -e gdb -ex "attach $srvPid" -ex "continue" &
     echo "Starting $daemonName with PID: $srvPid."
     echo "$srvPid" > "$pidFile"
 }
@@ -90,7 +113,7 @@ stopDaemon() {
             fi
         fi
     fi
-    log '*** '`date +"%Y-%m-%d"`": $daemonName stopped."
+    log '*** '`date +"%Y-%m-%d %H:%M:%S"`": $daemonName stopped."
     rm -f ${pidFile}
 }
 
@@ -152,7 +175,7 @@ checkDaemon() {
 
 checkIsValidAction() {
     local act=$1
-    local validActions="_start_stop_restart_status_"
+    local validActions="_start_debug_stop_restart_status_"
     local ok=$(echo "$validActions" | grep "_${act}_")
     [ "$ok" = "$validActions" ]; return $?
 }

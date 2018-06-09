@@ -607,8 +607,9 @@ COPY task_status (task_status_id, status_desc) FROM stdin;
 1	RUNNING
 2	PAUSED
 3	STOPPED
-4	ARCHIVED
-5	UNKNOWN
+4	ABORTED
+5	ARCHIVED
+6	UNKNOWN
 \.
 
 -- ----------------------------------------------------------------------

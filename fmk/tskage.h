@@ -161,9 +161,9 @@ private:
     void armHostInfoTimer();
     
     //----------------------------------------------------------------------
-    // Method: sendTaskReport
+    // Method: updateTaskStatus
     //----------------------------------------------------------------------
-    void sendTaskReport(std::string contId);
+    void updateTaskStatus(std::string contId);
 
     //----------------------------------------------------------------------
     // Method: computeTaskStatus
@@ -194,6 +194,11 @@ private:
     // Method: resetProgress
     //----------------------------------------------------------------------
     void resetProgress();
+    
+    //----------------------------------------------------------------------
+    // Method: startProgress
+    //----------------------------------------------------------------------
+    void startProgress();
     
     //----------------------------------------------------------------------
     // Method: updateProgress

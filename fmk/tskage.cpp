@@ -224,7 +224,7 @@ void TskAge::runEachIterationForContainers()
     // Update status for running containers
     for (auto const & kv : containerEpoch) {
         std::string contId = kv.first;
-        sendTaskReport(contId);
+        updateTaskStatus(contId);
     }
 
 }
@@ -340,7 +340,9 @@ void TskAge::processTskProcMsg(ScalabilityProtocolRole* c, MessageString & m)
         // Set processing status
         pStatus = PROCESSING;
         workingDuring = 0;
-        resetProgress();            
+        resetProgress();
+        startProgress();
+        updateProgress();
     } else {
         WarnMsg("Couldn't execute docker container");
         
@@ -385,7 +387,7 @@ void TskAge::processSubcmdMsg(MessageString & m)
         if (containerToTaskMap.find(subjName) == containerToTaskMap.end()) { return; }
         TRC("Trying to " + subCmd + " container with id " + subjName);
         applyActionOnContainer(subCmd, subjName);
-        sendTaskReport(subjName);
+        updateTaskStatus(subjName);
         break;
 
     case PROC_AGENT:
@@ -469,25 +471,26 @@ void TskAge::applyActionOnContainer(std::string & act, std::string & contId,
 }
 
 //----------------------------------------------------------------------
-// Method: sendTaskReport
+// Method: updateTaskStatus
 //----------------------------------------------------------------------
-void TskAge::sendTaskReport(std::string contId)
+void TskAge::updateTaskStatus(std::string contId)
 {
     // Define and set task object
     auto const & itTaskInfo = containerToTaskMap.find(contId);
     if (itTaskInfo == containerToTaskMap.end()) { return; }
-    
     TaskInfo & task = (*(itTaskInfo->second));
-    if ((task.taskStatus() == TASK_FAILED) ||
-        (task.taskStatus() == TASK_FINISHED)) { return; }
+    //if ((task.taskStatus() == TASK_FAILED) ||
+    //    (task.taskStatus() == TASK_FINISHED)) { return; }
 
     // Get updated Docker info
     json taskData = retrieveDockerInfo(contId, false);
-
-    std::string inspStatus = taskData["State"]["Status"].asString();
-    int         inspCode   = taskData["State"]["ExitCode"].asInt();
+    std::string inspStatus = taskData["Status"].asString();
+    int         inspCode   = taskData["ExitCode"].asInt();
 
     taskStatus = computeTaskStatus(inspStatus, inspCode);
+    TRC("Current reported status is '" + inspStatus +
+        "' (" + std::to_string(inspCode) + ")  ==> " +
+        TaskStatusName[taskStatus]);
 
     bool taskHasEnded = taskEnded(taskStatus);
 
@@ -530,8 +533,6 @@ void TskAge::sendTaskReport(std::string contId)
     addInfo["MainInput"] = task.inputs.products.at(0).productId();
     addInfo["Flags"]     = task.taskFlags();
     
-    TRC("INPUTS: " + task.inputs.str());
-        
     // Place all taskdata information into task structure
     taskData["Info"] = addInfo;
     task["taskData"] = taskData;
@@ -543,6 +544,7 @@ void TskAge::sendTaskReport(std::string contId)
         taskHasEnded = true;
     }
 
+    // Send message with updated status and info
     sendBodyElem<MsgBodyTSK>(ChnlTskProc,
                              ChnlTskProc + "_" + compName, MsgTskRep,
                              compName, "TskMng",
@@ -552,9 +554,6 @@ void TskAge::sendTaskReport(std::string contId)
     if (taskHasEnded) {
         pStatus = FINISHING;
         InfoMsg("Switching to status " + ProcStatusName[pStatus]);
-    }
-
-    if (taskStatus == TASK_FINISHED) {
         containerToTaskMap.erase(containerToTaskMap.find(contId));
         containerEpoch.erase(containerEpoch.find(contId));
     }
@@ -566,20 +565,19 @@ void TskAge::sendTaskReport(std::string contId)
 //----------------------------------------------------------------------
 TaskStatus TskAge::computeTaskStatus(std::string & inspStatus, int & inspCode)
 {
-    if        (inspStatus == "running") {
-        return TASK_RUNNING;
-    } else if (inspStatus == "paused") {
-        return TASK_PAUSED;
-    } else if (inspStatus == "created") {
+    static std::map<std::string, TaskStatus> status2Status {
+        {"running", TASK_RUNNING},
+        {"paused",  TASK_PAUSED},
+        {"created", TASK_STOPPED},
+        {"dead",    TASK_FAILED},
+        {"exited",  TASK_FINISHED}};
+
+    if (inspCode == 0) {
+        return status2Status[inspStatus];
+    } else if ((inspCode > 128) && (inspCode < 160)) {
         return TASK_STOPPED;
-    } else if (inspStatus == "dead") {
-        return TASK_STOPPED;
-    } else if (inspStatus == "exited") {
-        return ((inspCode == 0) ? TASK_FINISHED :
-                ((inspCode > 128) && (inspCode < 160)) ? TASK_STOPPED :
-                TASK_FAILED);
     } else {
-        return TASK_UNKNOWN_STATE;
+        return TASK_FAILED;
     }
 }
 
@@ -599,10 +597,8 @@ bool TskAge::taskEnded(TaskStatus & taskStatus)
 //----------------------------------------------------------------------
 json TskAge::retrieveDockerInfo(std::string & contId, bool fullInfo)
 {
-    static std::string inspectSelection("{\"Id\":{{json .Id}},"
-                                        "\"State\":{{json .State}},"
-                                        "\"Path\":{{json .Path}},"
-                                        "\"Args\":{{json .Args}}}");
+    static std::string inspectSelection("[{\"Status\":{{json .State.Status}},"
+                                        "\"ExitCode\":{{json .State.ExitCode}}}]");
     std::stringstream info;
     bool ok = true;
     do {
@@ -614,7 +610,7 @@ json TskAge::retrieveDockerInfo(std::string & contId, bool fullInfo)
         ok = dckMng->getInfo(contId, info);
     } while (! ok);
 
-    return ((fullInfo) ? JValue(info.str()).val()[0] : JValue(info.str()).val());
+    return JValue(info.str()).val()[0];
 }
 
 //----------------------------------------------------------------------
@@ -695,41 +691,62 @@ void TskAge::resetProgress()
 }
 
 //----------------------------------------------------------------------
+// Method: startProgress
+//----------------------------------------------------------------------
+void TskAge::startProgress()
+{
+    // First, check that file exists and is open
+    if (isLogFileOpen) { return; }
+    
+    InfoMsg("Logfile not open");
+    logFilePos = 0;
+    logDir = exchangeDir + "/log";
+    logFile = "";
+        
+    // Look for log file in <exchangeDirr>/log
+    while (logFile.empty()) { // 10 s
+        InfoMsg("While logFile is empty");
+        DIR * dp = NULL;
+        struct dirent * dirp;
+        if ((dp = opendir(logDir.c_str())) == NULL) {
+            WarnMsg("Cannot open log directory " + logDir);
+        } else {
+            InfoMsg("Direc. opened");
+            while ((dirp = readdir(dp)) != NULL) {
+                InfoMsg("While getting files from dir...");
+                if (dirp->d_name[0] != '.') {
+                    InfoMsg("dname is not dot");
+                    std::string dname(dirp->d_name);
+                    if (dname.substr(0, 3) != "EUC") { continue; }
+                    logFile = logDir + "/" + dname;
+                }
+            }
+            closedir(dp);
+            InfoMsg("Direc. closed");
+        }
+        sleep(1);
+    }
+
+    // Open log file
+    if (! logFile.empty()) {
+        logFileHdl.open(logFile);
+        InfoMsg("Logfile " + logFile + "opened");
+        isLogFileOpen = true;
+    } else {
+        ErrMsg("Cannot open log file");
+        progress = 1;
+    }
+}
+
+//----------------------------------------------------------------------
 // Method: updateProgress
 //----------------------------------------------------------------------
 void TskAge::updateProgress()
 {
-    // First, check that file exists and is open
     if (! isLogFileOpen) {
-        logFilePos = 0;
-        logDir = exchangeDir + "/log";
-        logFile = "";
-        
-        // Look for log file in <exchangeDirr>/log
-        while (logFile.empty()) {
-            DIR * dp = NULL;
-            struct dirent * dirp;
-            if ((dp = opendir(logDir.c_str())) == NULL) {
-                WarnMsg("Cannot open log directory " + logDir);
-            } else {
-                while ((dirp = readdir(dp)) != NULL) {
-                    if (dirp->d_name[0] != '.') {
-                        std::string dname(dirp->d_name);
-                        //if (dname.substr(0, 3) != "EUC") { continue; }
-                        logFile = logDir + "/" + dname;
-                    }
-                }
-                closedir(dp);
-            }
-        }
-        // Open log file
-        if (! logFile.empty()) {
-            logFileHdl.open(logFile);
-            isLogFileOpen = true;
-        }
-    }
-
-    if (! isLogFileOpen) { return; }
+        if (progress < 100) { progress++; }
+        return;
+    } //InfoMsg("Logfile not opened, return"); return; }
     
     // See if new content can be obtained from the log file
     logFileHdl.seekg(0, logFileHdl.end);
@@ -739,15 +756,14 @@ void TskAge::updateProgress()
     
     // If new content is there, read it and process it
     if (length > logFilePos) {
+        InfoMsg("Logfile legnth increased");
+        
         logFileHdl.seekg(logFilePos, logFileHdl.beg);
 
         std::string line;
         while (! logFileHdl.eof()) {
             // Get line, look for progress mark, and parse it
-            // It is assumed that  progress is shown as follows:
-            // .....:PROGRESS:... XXX%
-            // where XXX is a float number representing the percentage
-            // of progress, and that no other % appears in the line
+            InfoMsg("Retrieving new logfile piece");
             std::getline(logFileHdl, line);
             if (line.length() < 1) { break; }
             size_t progressTagPos = line.find(ProgressTag);
@@ -770,6 +786,7 @@ void TskAge::updateProgress()
         logFileHdl.clear();
         logFilePos = length;
     }
+    InfoMsg("New progress: " + std::to_string(progress) + "%");
 }
 
 //----------------------------------------------------------------------

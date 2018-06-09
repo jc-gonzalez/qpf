@@ -125,9 +125,30 @@ void Master::fromOperationalToRunning()
 //----------------------------------------------------------------------
 void Master::runEachIteration()
 {
-    // 1. Check input products
-    std::vector<TaskInfo> tasks;
+    static bool isFirstIteration = true;
 
+    std::vector<TaskInfo> tasks;
+    std::map<std::pair<std::string, TaskStatus>, int> * aborted = 0;
+
+    // 0. Check if there are unfinished tasks in the DB
+    if (isFirstIteration) {
+
+        aborted = new std::map<std::pair<std::string, TaskStatus>, int>;
+
+        ProductList restartInData;
+        if (datMng->getRestartableTaskInputs(restartInData, aborted)) {
+            
+            // There are input products
+            TRC("There are tasks to be restarted!");
+            
+            // a. Generate tasks for processing these products
+            tskOrc->createTasks(restartInData, 0, tasks);
+            
+        }
+
+    }        
+
+    // 1. Check input products
     ProductList inData;
     std::string space;
     if (evtMng->getInData(inData, space)) {
@@ -161,7 +182,7 @@ void Master::runEachIteration()
 
     if (tasks.size() > 0) {
         
-        TRC("Created " + std::to_string(tasks.size()) + "tasks");
+        TRC("There are " + std::to_string(tasks.size()) + "tasks in the queue . . .");
         
         // d. Store tasks information into DB (initialStore = true)
         TRC("Archiving tasks info");
@@ -189,8 +210,14 @@ void Master::runEachIteration()
         json fmkInfoValue;
         tskMng->getProcFmkInfoUpdate(fmkInfoValue);
         evtMng->sendProcFmkInfoUpdate(fmkInfoValue);
-        datMng->storeTaskStatusSpectra(fmkInfoValue);
+        datMng->storeTaskStatusSpectra(fmkInfoValue, aborted);
     }   
+
+    if (isFirstIteration) {
+        isFirstIteration = false;
+        delete aborted;
+        aborted = 0;
+    }
 }
 
 //----------------------------------------------------------------------

@@ -52,7 +52,6 @@ DAEMON_NAME=QPFCore
 
 QPFEXE=${QPF}
 DBG=""
-DBG=""
 SESSION=""
 MODE="Core"
 VERBOSITY=""
@@ -260,6 +259,9 @@ checkDaemon "$mode" "$pidDir"
 case "$action" in
   start)
     startDaemon "$mode" "$pidDir" "$daemonName" "$cmd $allOpts"
+    ;;
+  start_debug)
+    startDaemonDebug "$mode" "$pidDir" "$daemonName" "$cmd $allOpts"
     ;;
   stop)
     stopDaemon "$mode" "$pidDir" "$daemonName"

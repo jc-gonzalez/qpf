@@ -47,6 +47,7 @@
 #include <iostream>
 #include <fstream>
 #include <cassert>
+#include <thread>
 
 ////////////////////////////////////////////////////////////////////////////
 // Namespace: QPF
@@ -89,15 +90,17 @@ bool DockerMng::getDockerInfo(std::stringstream & info, std::string filt = std::
 bool DockerMng::runCmd(std::string cmd, std::vector<std::string> args,
                        std::string & containerId)
 {
-    procxx::process dckCmd("docker", cmd);
-    dckCmd.add_argument(containerId);
+    procxx::process * dckCmd = new procxx::process("docker", cmd);
+    dckCmd->add_argument(containerId);
     if (args.size() > 0) {
-        for (auto & a : args) { dckCmd.add_argument(a); }
+        for (auto & a : args) { dckCmd->add_argument(a); }
     }
     
-    dckCmd.exec();
+    dckCmd->exec();
 
-    dckCmd.wait();
-    return (dckCmd.code() == 0);
+    std::thread t([&] {dckCmd->wait();});
+    t.detach();
+    //dckCmd.wait();
+    return (dckCmd->code() == 0);
 }
 //}

@@ -231,7 +231,7 @@ ProductMetadata & URLHandler::fromLocalArch2Gateway()
                     cfg.storage.gateway + "/in");
 
     // Set (hard) link
-    (void)relocate(file, newFile, LINK, -1);
+    (void)relocate(file, newFile, LINK); //-1);
 
     // Change url in processing task
     product["url"]      = newUrl;
@@ -476,6 +476,28 @@ ProductMetadata & URLHandler::fromLocalArch2ExportLocation()
 }
 
 //----------------------------------------------------------------------
+// Method: resetUrl2LocalArch
+//----------------------------------------------------------------------
+ProductMetadata & URLHandler::resetUrl2LocalArch()
+{
+    // Get product basename
+    std::vector<std::string> tokens;
+    productUrl = product.url();
+    str::split(productUrl, '/', tokens);
+    std::string baseName = tokens.back();
+
+    // Set new location and url
+    std::string newFile(cfg.storage.archive + "/" + baseName);
+    std::string newUrl ("file://" + newFile);
+
+        // Change url in processing task
+    product["url"]      = newUrl;
+    product["urlSpace"] = LocalArchSpace;
+
+    return product;
+}
+
+//----------------------------------------------------------------------
 // Method: sendToVOSpace
 //----------------------------------------------------------------------
 bool URLHandler::sendToVOSpace(std::string user, std::string pwd,
@@ -503,7 +525,7 @@ int URLHandler::relocate(std::string & sFrom, std::string & sTo,
         if (msTimeOut < 0) {
             // If timeout < 0, wait forever until stat is successful
             // (in fact, set a very large value for timeout, say 1 minute)
-            msTimeOut = 60000;
+            msTimeOut = 3000;
         }
         struct stat buffer;
         struct timespec tsp1, tsp2;
@@ -522,13 +544,16 @@ int URLHandler::relocate(std::string & sFrom, std::string & sTo,
         }
     }
 
+    
     int retVal = 0;
     switch(method) {
     case LINK:
+        //(void)unlink(sTo.c_str());
         retVal = link(sFrom.c_str(), sTo.c_str());
         TRC("LINK: Hard link of " << sFrom << " to " << sTo);
         break;
     case SYMLINK:
+        //(void)unlink(sTo.c_str());
         retVal = symlink(sFrom.c_str(), sTo.c_str());
         TRC("SYMLINK: Soft link of " << sFrom << " to " << sTo);
         break;
