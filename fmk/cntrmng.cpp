@@ -101,9 +101,11 @@ bool ContainerMng::createContainer(std::string img, std::vector<std::string> opt
     cnt.exec();
     cnt.wait();
 
-    std::ifstream dockerIdFile(tmpFileName);
-    std::getline(dockerIdFile, containerId);
-
+    while (containerId.empty()) {
+        std::ifstream dockerIdFile(tmpFileName);
+        std::getline(dockerIdFile, containerId);
+    }
+    
     return (cnt.code() == 0);
 }
 
@@ -133,9 +135,11 @@ bool ContainerMng::createContainer(std::string proc, std::string workDir,
     cnt.exec();
     cnt.wait();
 
-    std::ifstream dockerIdStrm(dockerIdFile);
-    std::getline(dockerIdStrm, containerId);
-
+    while (containerId.empty()) {
+        std::ifstream dockerIdStrm(dockerIdFile);
+        std::getline(dockerIdStrm, containerId);
+    }
+    
     return (cnt.code() == 0);
 }
 
