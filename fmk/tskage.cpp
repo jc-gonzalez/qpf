@@ -335,12 +335,11 @@ void TskAge::processTskProcMsg(ScalabilityProtocolRole* c, MessageString & m)
         containerToTaskMap[contId]  = runningTask;
         containerEpoch[contId]      = time(0);
         
-        usleep(50000); // 50 ms
-
         // Set processing status
         pStatus = PROCESSING;
         workingDuring = 0;
-        resetProgress();            
+        resetProgress();
+        startProgress();
     } else {
         WarnMsg("Couldn't execute docker container");
         
@@ -695,9 +694,9 @@ void TskAge::resetProgress()
 }
 
 //----------------------------------------------------------------------
-// Method: updateProgress
+// Method: startProgress
 //----------------------------------------------------------------------
-void TskAge::updateProgress()
+void TskAge::startProgress()
 {
     // First, check that file exists and is open
     if (! isLogFileOpen) {
@@ -706,7 +705,9 @@ void TskAge::updateProgress()
         logFile = "";
         
         // Look for log file in <exchangeDirr>/log
-        while (logFile.empty()) {
+        int numTrials = 0;
+        bool isFoundLogFile = false;
+        while (logFile.empty() && (numTrials < 10)) {
             DIR * dp = NULL;
             struct dirent * dirp;
             if ((dp = opendir(logDir.c_str())) == NULL) {
@@ -717,19 +718,32 @@ void TskAge::updateProgress()
                         std::string dname(dirp->d_name);
                         //if (dname.substr(0, 3) != "EUC") { continue; }
                         logFile = logDir + "/" + dname;
+                        isFoundLogFile = true;
                     }
                 }
                 closedir(dp);
             }
+            if (isFoundLogFile) { break; }
+            numTrials++;
+            usleep(500000); // 200 ms
         }
         // Open log file
-        if (! logFile.empty()) {
+        if (isFoundLogFile) {
             logFileHdl.open(logFile);
             isLogFileOpen = true;
         }
     }
+}
 
-    if (! isLogFileOpen) { return; }
+//----------------------------------------------------------------------
+// Method: updateProgress
+//----------------------------------------------------------------------
+void TskAge::updateProgress()
+{
+    if (! isLogFileOpen) {
+        startProgress();
+        if (! isLogFileOpen) return;
+    }
     
     // See if new content can be obtained from the log file
     logFileHdl.seekg(0, logFileHdl.end);
