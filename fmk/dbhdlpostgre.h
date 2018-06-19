@@ -231,7 +231,7 @@ public:
     // Method: runCmd
     // Runs a SQL command
     //----------------------------------------------------------------------
-    virtual bool runCmd(std::string cmd);
+    virtual bool runCmd(std::string cmd, bool clear = false);
 
     //----------------------------------------------------------------------
     // Method: fillWithResult
@@ -252,6 +252,12 @@ public:
     //----------------------------------------------------------------------
     virtual bool checkSignature(std::string & sgnt, std::string & ptype, 
                                 std::string & ver);
+
+    //----------------------------------------------------------------------
+    // Method: retrieveRestartableTasks
+    // Retrieve tasks with status SCHEDULED and RUNNING
+    //----------------------------------------------------------------------
+    virtual bool retrieveRestartableTasks(std::map<int,TaskInfo> & tasks);
 
 private:
 
