@@ -229,7 +229,10 @@ MainWindow::MainWindow(QString url, QString sessionName,
     setLogWatch();
 
     // Finally, deactivate some elements
-    ui->tabMainWgd->removeTab(1);    
+#ifdef PANEL_TRANSMISSIONS
+#else
+    ui->tabMainWgd->removeTab(1);
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -298,7 +301,7 @@ void MainWindow::manualSetupUI()
     tb->setTabIcon(2, QIcon(":/img/monit.png"));
     tb->setTabIcon(3, QIcon(":/img/storage2.png"));
     tb->setTabIcon(4, QIcon(":/img/alerts.png"));  
-
+    
     connect(ui->tabMainWgd, SIGNAL(currentChanged(int)),
             this, SLOT(selectRowInNav(int)));
     connect(ui->tabMainWgd, SIGNAL(tabCloseRequested(int)),
@@ -332,7 +335,9 @@ void MainWindow::manualSetupUI()
     ui->tabMainWgd->setCornerWidget(tbtnTabsList, Qt::TopLeftCorner);
 
     const QList<QString> fixedItemNames {"Log Information",
-                                       //"Messages",
+#ifdef PANEL_TRANSMISSIONS
+                                         "Messages",
+#endif
                                          "Monitoring",
                                          "Local Archive",
                                          "Processing Alerts"};
@@ -382,9 +387,11 @@ void MainWindow::manualSetupUI()
     ui->treevwArchive->setSortingEnabled(true);
 
     // 5. Transmissions Model
+#ifdef PANEL_TRANSMISSIONS
     txModel = new TxTableModel(nodeNames);
     ui->tblvwTx->setModel(txModel);
-
+#endif
+    
     //== Setup processing hosts monitoring widgets ===================
     procFmkMonit = new ProcFmkMonitor(ui->scrollAreaAgents);
     procFmkMonit->setupHostsInfo(Config::procFmkInfo);
@@ -1243,12 +1250,14 @@ void MainWindow::updateSystemView()
             
             break;
 
+#ifdef PANEL_TRANSMISSIONS            
         case MsgsTab:
             
             //== 5. Transmissions
             txModel->refresh();
             ui->tblvwTx->setColumnHidden(MsgContentCol, true);
             break;
+#endif
 
         case TasksTab:
             
@@ -2732,6 +2741,7 @@ void MainWindow::reportFiltering()
 // Transmissions View configuration
 //======================================================================
 
+#ifdef PANEL_TRANSMISSIONS
 //----------------------------------------------------------------------
 // METHOD: initTxView
 //----------------------------------------------------------------------
@@ -2773,6 +2783,24 @@ void MainWindow::displayTxInfo()
 
     showJSONdata(msgName, contentString);
 }
+#else
+//----------------------------------------------------------------------
+// METHOD: initTxView
+//----------------------------------------------------------------------
+void MainWindow::initTxView() {
+}
+
+//----------------------------------------------------------------------
+// SLOT: sortTxViewByColumn
+//----------------------------------------------------------------------
+void MainWindow::sortTxViewByColumn(int c) {}
+
+//----------------------------------------------------------------------
+// Method: displayTxInfo
+// Show dialog with task information
+//----------------------------------------------------------------------
+void MainWindow::displayTxInfo() {}
+#endif
 
 //======================================================================
 // Agents Monitoring Panel
