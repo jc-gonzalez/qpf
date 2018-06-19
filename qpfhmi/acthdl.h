@@ -202,6 +202,9 @@ private:
     QMap<QString, QAction *> acUserTools;
 
     QPoint pointOfAction;
+
+    static const int NumOfFixedTabs;
+
 };
 
 }

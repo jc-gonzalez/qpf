@@ -50,7 +50,9 @@ namespace QPF {
 #define T(a) QString( #a )
 const QString TabWidgetNames[] = { LIST_OF_TABWIDGETS };
 #undef T
-    
+
+const int ActionHandler::NumOfFixedTabs = 4;
+
 //----------------------------------------------------------------------
 // Constructor
 //----------------------------------------------------------------------
@@ -403,11 +405,12 @@ void ActionHandler::activateClipboardFor(TextView * child)
 //----------------------------------------------------------------------
 void ActionHandler::closeTab(int n)
 {
+    QTabWidget* tb = qobject_cast<QTabWidget*>(sender());
     if ((tabWdgName == TabWidgetNames[TabWdg_Main]) ||
-        (qobject_cast<QTabWidget*>(sender()) == mw->ui->tabMainWgd)) {
+        (tb == mw->ui->tabMainWgd)) {
         mw->removeRowInNav(n);
     }
-    delete qobject_cast<QTabWidget*>(tabWidgetSender)->widget(n);
+    delete tb->widget(n);
 }
 
 //----------------------------------------------------------------------
@@ -416,7 +419,6 @@ void ActionHandler::closeTab(int n)
 //----------------------------------------------------------------------
 void ActionHandler::closeTabAction()
 {
-    static const int NumOfFixedTabs = 5;
     int nTab;
     if (isMenuForTabWidget) {
         nTab = qobject_cast<QTabWidget*>(tabWidgetSender)->tabBar()->tabAt(menuPt);
@@ -436,7 +438,6 @@ void ActionHandler::closeTabAction()
 //----------------------------------------------------------------------
 void ActionHandler::closeAllTabAction()
 {
-    static const int NumOfFixedTabs = 5;
     if (tabWdgName == TabWidgetNames[TabWdg_Main]) {
         for (int i = mw->ui->lstwdgNav->count() - 1; i >= NumOfFixedTabs; --i) {
             closeTab(i);
@@ -454,7 +455,6 @@ void ActionHandler::closeAllTabAction()
 //----------------------------------------------------------------------
 void ActionHandler::closeOtherTabAction()
 {
-    static const int NumOfFixedTabs = 5;
     int nTab;
     if (isMenuForTabWidget) {
         nTab = qobject_cast<QTabWidget*>(tabWidgetSender)->tabBar()->tabAt(menuPt);
@@ -786,11 +786,13 @@ void ActionHandler::showSysAlertsContextMenu(const QPoint & p)
     }
 }
 
+
 //----------------------------------------------------------------------
 // METHOD: createTxViewActions
 //----------------------------------------------------------------------
 void ActionHandler::createTxViewActions()
 {
+#ifdef PANEL_TRANSMISSIONS
     mw->ui->tblvwTx->setContextMenuPolicy(Qt::CustomContextMenu);
 
     acShowMsgInfo = new QAction(tr("Display message content"), mw->ui->tblvwTx);
@@ -799,6 +801,7 @@ void ActionHandler::createTxViewActions()
 
     connect(mw->ui->tblvwTx, SIGNAL(customContextMenuRequested(const QPoint &)),
             this, SLOT(showTxContextMenu(const QPoint &)));
+#endif
 }
 
 //----------------------------------------------------------------------
