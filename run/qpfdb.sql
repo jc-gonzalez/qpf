@@ -551,6 +551,8 @@ union all
         where sec.key like 'processing')
 );
 
+-- ----------------------------------------------------------------------
+
 create materialized view prodfilt_checks_ccd as
 select distinct
     sec.key as sec,
@@ -569,6 +571,8 @@ cross join json_each(values.value) items
 where sec.key like 'diagnostics' and values.key not like 'name'
 order by sec.key, diag.key, values.key, items.key;
 
+-- ----------------------------------------------------------------------
+
 create materialized view prodfilt_checks_file as
 select distinct
     sec.key as sec,
@@ -582,6 +586,52 @@ cross join json_each(q.value) sec
 cross join json_each(sec.value) diag
 where sec.key not like 'diagnostics'
 order by sec.key, diag.key;
+
+-- ----------------------------------------------------------------------
+
+CREATE MATERIALIZED VIEW agents_tasks AS
+(
+SELECT t.task_data#>>'{Info,Agent}' AS agent,
+       ts.status_desc AS status,
+       COUNT(*)
+FROM tasks_info t
+INNER JOIN task_status ts
+    ON t.task_status_id = ts.task_status_id
+WHERE t.task_status_id <> 4
+GROUP BY agent, status
+order by agent, status
+) UNION ALL (
+SELECT * FROM (VALUES
+    (NULL, 'SCHEDULED',0),
+    (NULL, 'FAILED',   0),
+    (NULL, 'FINISHED', 0),
+    (NULL, 'RUNNING',  0),
+    (NULL, 'PAUSED',   0),
+    (NULL, 'STOPPED',  0),
+    (NULL, 'ABORTED',  0),
+    (NULL, 'ARCHIVED', 0))
+AS i(agent, status, count)
+);
+
+-- ----------------------------------------------------------------------
+
+CREATE MATERIALIZED VIEW agents_tasks_spectra AS
+(
+SELECT *
+FROM crosstab('select agent,status,count from agents_tasks order by agent,status',
+              'select distinct status from agents_tasks order by 1')
+AS (agent text,
+    aborted int,
+    archived int,
+    failed int,
+    finished int,
+    paused int,
+    running int,
+    scheduled int,
+    stopped int)
+WHERE (agent = '') IS FALSE
+AND agent <> '<not-set>'
+);
 
 -- ======================================================================
 -- DATA
@@ -607,8 +657,9 @@ COPY task_status (task_status_id, status_desc) FROM stdin;
 1	RUNNING
 2	PAUSED
 3	STOPPED
-4	ARCHIVED
-5	UNKNOWN
+4	ABORTED
+5	ARCHIVED
+6	UNKNOWN
 \.
 
 -- ----------------------------------------------------------------------
