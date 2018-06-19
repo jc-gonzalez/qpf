@@ -397,13 +397,14 @@ typedef json                                   TaskData;
 
 #define TLIST_TASK_STATUS                                       \
     T(SCHEDULED, -2),                                           \
-        T(FAILED,    -1),                                       \
-        T(FINISHED,   0),                                       \
-        T(RUNNING,    1),                                       \
-        T(PAUSED,     2),                                       \
-        T(STOPPED,    3),                                       \
-        T(ARCHIVED,   4),                                       \
-        T(UNKNOWN_STATE, 5)
+    T(FAILED,    -1),                                           \
+    T(FINISHED,   0),                                           \
+    T(RUNNING,    1),                                           \
+    T(PAUSED,     2),                                           \
+    T(STOPPED,    3),                                           \
+    T(ABORTED,    4),                                           \
+    T(ARCHIVED,   5),                                           \
+    T(UNKNOWN_STATE, 6)
 
 #define T(a,b) TASK_ ## a = b
 enum TaskStatus { TLIST_TASK_STATUS };
@@ -420,6 +421,7 @@ struct TaskInfo : public JRecord {
     }
     virtual void dump() {
         DUMPJSTR(taskName);
+        DUMPJSTR(taskRule);
         DUMPJSTR(taskPath);
         DUMPJSTR(taskHost);
         DUMPJSTR(taskAgent);
@@ -436,6 +438,7 @@ struct TaskInfo : public JRecord {
         DUMPJSTR(taskSession);
     }
     JSTR(taskName);
+    JSTR(taskRule);
     JSTR(taskPath);
     JSTR(taskHost);
     JSTR(taskAgent);
