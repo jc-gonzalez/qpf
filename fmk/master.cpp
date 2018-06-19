@@ -125,9 +125,29 @@ void Master::fromOperationalToRunning()
 //----------------------------------------------------------------------
 void Master::runEachIteration()
 {
-    // 1. Check input products
+    static bool isFirstIteration = true;
+
     std::vector<TaskInfo> tasks;
 
+    // 0. Check if there are unfinished tasks in the DB
+    if (isFirstIteration) {
+
+        ProductList restartInData;
+        if (datMng->getRestartableTaskInputs(restartInData)) {
+            
+            // There are input products
+            TRC("There are tasks to be restarted!");
+            
+            // a. Generate tasks for processing these products
+            tskOrc->createTasks(restartInData, 0, tasks);
+            
+        }
+
+        isFirstIteration = false;
+
+    }        
+
+    // 1. Check input products
     ProductList inData;
     std::string space;
     if (evtMng->getInData(inData, space)) {
@@ -161,7 +181,7 @@ void Master::runEachIteration()
 
     if (tasks.size() > 0) {
         
-        TRC("Created " + std::to_string(tasks.size()) + "tasks");
+        TRC("There are " + std::to_string(tasks.size()) + "tasks in the queue . . .");
         
         // d. Store tasks information into DB (initialStore = true)
         TRC("Archiving tasks info");
@@ -182,14 +202,15 @@ void Master::runEachIteration()
     json tskRepData;
     if (tskMng->getTskRepUpdate(tskRepData)) {
         datMng->storeTskRegData(tskRepData);
+        datMng->updateTaskStatusSpectra();
     }
     
     // 4. Retrieve and send FMK monitoring information
     if (evtMng->isHMIActive()) {
         json fmkInfoValue;
         tskMng->getProcFmkInfoUpdate(fmkInfoValue);
-        evtMng->sendProcFmkInfoUpdate(fmkInfoValue);
         datMng->storeTaskStatusSpectra(fmkInfoValue);
+        evtMng->sendProcFmkInfoUpdate(fmkInfoValue);
     }   
 }
 
