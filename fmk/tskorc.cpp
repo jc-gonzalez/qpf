@@ -293,6 +293,8 @@ void TskOrc::createTasks(ProductList & inData, int flags, std::vector<TaskInfo> 
         RuleInputs ruleInputs;
         if (checkRulesForProductType(prodType, ruleInputs)) {
             for (auto & kv : ruleInputs) {
+                TRC("Product type " + prodType + " fires rule: " +
+                        orcMaps.ruleDesc[kv.first]);
                 DbgMsg("Product type " + prodType + " fires rule: " +
                         orcMaps.ruleDesc[kv.first]);
                 for (auto & itInp : kv.second.products) {
@@ -302,6 +304,7 @@ void TskOrc::createTasks(ProductList & inData, int flags, std::vector<TaskInfo> 
                 // Generate task and store in output vector
                 TaskInfo task;
                 createTask(kv.first, kv.second, flags, task);
+                TRC("New task created, append to list of tasks...");
                 tasks.push_back(task);
             }
         }
@@ -318,6 +321,7 @@ void TskOrc::createTask(Rule * rule, ProductList & inputs, int flags, TaskInfo &
     UUID uuid;
     uuid.generate_random();
     task["taskName"]     = rule->name + "_" + epoch + "_" + uuid.asLowerString();
+    task["taskRule"]     = rule->name;
     task["taskPath"]     = rule->processingElement;
     task["taskStart"]    = epoch;
     task["taskEnd"]      = "";
