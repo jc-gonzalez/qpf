@@ -326,12 +326,79 @@ void DataMng::saveProductsToDB(ProductList & productList)
 }
 
 //----------------------------------------------------------------------
+// Method: updateTaskStatusSpectra
+// Refresh the table with the status of all tasks in all task agents
+// (stored in the form of a materialized view)
+//----------------------------------------------------------------------
+void DataMng::updateTaskStatusSpectra()
+{
+    std::unique_ptr<DBHandler> dbHdl(new DBHdlPostgreSQL);
+
+    try {
+        // Check that connection with the DB is possible
+        dbHdl->openConnection();
+        // Try to store the data into the DB
+        dbHdl->runCmd("refresh materialized view agents_tasks;");
+        dbHdl->runCmd("refresh materialized view agents_tasks_spectra;");
+    } catch (RuntimeException & e) {
+        ErrMsg(e.what());
+        return;
+    }
+
+    // Close connection
+    dbHdl->closeConnection();
+}
+
+//----------------------------------------------------------------------
 // Method: storeTaskStatusSpectra
 // Store task agent spectra in DB
 //----------------------------------------------------------------------
 void DataMng::storeTaskStatusSpectra(json & fmkInfoValue)
 {
     TskStatTable tssSet;
+    retrieveTaskStatusSpectra(tssSet);
+    
+    for (Json::ValueIterator itr = fmkInfoValue["hostsInfo"].begin();
+         itr != fmkInfoValue["hostsInfo"].end(); ++itr) {
+        std::string key = itr.key().asString();
+        json hInfo = *itr;
+        for (auto & kv : tssSet) {
+            std::string agNme = kv.first;
+            TskStatSpectra & tss = kv.second;
+            json ag = hInfo["agentsInfo"][agNme.c_str()];
+            ag["running"]   = tss.running;
+            ag["scheduled"] = tss.scheduled;
+            ag["paused"]    = tss.paused;
+            ag["stopped"]   = tss.stopped;
+            ag["failed"]    = tss.failed;
+            ag["finished"]  = tss.finished;
+        }
+    }
+    /*    
+    for (Json::ValueIterator itr = fmkInfoValue["swarmInfo"].begin();
+         itr != fmkInfoValue["swarmInfo"].end(); ++itr) {
+        std::string key = itr.key().asString();
+        json sw = (*itr)["counts"];
+        TskStatSpectra tss(sw["running"].asInt(),
+                           sw["scheduled"].asInt(),
+                           sw["paused"].asInt(),
+                           sw["stopped"].asInt(),
+                           sw["failed"].asInt(),
+                           sw["finished"].asInt());
+        tssSet.push_back(std::make_pair(sw["name"].asString(), tss));
+    }
+    */
+}
+
+#ifdef COMMENTED_OUT
+//----------------------------------------------------------------------
+// Method: storeTaskStatusSpectra
+// Store task agent spectra in DB
+//----------------------------------------------------------------------
+void DataMng::storeTaskStatusSpectra(json & fmkInfoValue)
+{
+    TskStatTable tssSet;
+    retrieveTaskStatusSpectra(tssSet);
     
     for (Json::ValueIterator itr = fmkInfoValue["hostsInfo"].begin();
          itr != fmkInfoValue["hostsInfo"].end(); ++itr) {
@@ -381,6 +448,7 @@ void DataMng::storeTaskStatusSpectra(json & fmkInfoValue)
     // Close connection
     dbHdl->closeConnection();
 }
+#endif
 
 //----------------------------------------------------------------------
 // Method: retrieveTaskStatusSpectra
@@ -394,7 +462,10 @@ void DataMng::retrieveTaskStatusSpectra(TskStatTable & tssSet)
     try {
         // Check that connection with the DB is possible
         dbHdl->openConnection();
-        if (! dbHdl->getTable("task_status_spectra", table)) {
+        
+        //if (! dbHdl->getTable("task_status_spectra", table)) {
+        dbHdl->runCmd("refresh materialized view agents_tasks_spectra;");
+        if (! dbHdl->getTable("agents_tasks_spectra", table)) {
             RaiseSysAlert(Alert(Alert::System,
                                 Alert::Warning,
                                 Alert::Resource,
@@ -410,11 +481,17 @@ void DataMng::retrieveTaskStatusSpectra(TskStatTable & tssSet)
     // Close connection
     dbHdl->closeConnection();
 
+    if (table.size() < 1) { return; }
+
     // Place table results into task status spectra table
     tssSet.clear();
     for (auto & row : table) {
-        TskStatSpectra tss(std::stoi(row[1]), std::stoi(row[2]), std::stoi(row[3]),
-                           std::stoi(row[4]), std::stoi(row[5]), std::stoi(row[6]));
+        auto str2Num  = [&] (int i) -> int
+                        { return (strlen(row[i].c_str()) > 0) ? std::stoi(row[i]) : 0; };        
+        //TskStatSpectra tss(std::stoi(row[1]), std::stoi(row[2]), std::stoi(row[3]),
+        //                   std::stoi(row[4]), std::stoi(row[5]), std::stoi(row[6]));
+        TskStatSpectra tss(str2Num(6), str2Num(7), str2Num(5),
+                           str2Num(8), str2Num(3), str2Num(4));
         tssSet.push_back(std::make_pair(row[0], tss));
     }
 }
@@ -557,8 +634,6 @@ bool DataMng::getProductLatest(std::string prodType,
     return retVal;
 }
 
-
-
 //----------------------------------------------------------------------
 // Method: processInDataMsg
 //----------------------------------------------------------------------
@@ -574,3 +649,47 @@ void DataMng::txInDataToLocalArch(ProductList & inData)
     // Save to DB
     saveProductsToDB(inData);
 }
+
+//----------------------------------------------------------------------
+// Method: getRestartableTaskInputs
+// Returns the list of inputs that triggered the creation of new tasks,
+// for the tasks that appear as scheduled or running in the database,
+// at the start of the Core
+//----------------------------------------------------------------------
+bool DataMng::getRestartableTaskInputs(ProductList & inputFiles)
+{
+    bool retVal = true;
+    std::unique_ptr<DBHandler> dbHdl(new DBHdlPostgreSQL);
+    
+    std::map<int,TaskInfo> taskSet;
+    
+    try {
+        // Check that connection with the DB is possible
+        dbHdl->openConnection();
+        
+        // Try to get tasks that must be restarted at core start time
+        if (! dbHdl->retrieveRestartableTasks(taskSet)) { return false; }
+
+    } catch (RuntimeException & e) {
+        ErrMsg(e.what());
+        retVal = false;
+    }
+
+    // Close connection
+    dbHdl->closeConnection();
+
+    // A set of tasks have been retrieved, re-build these tasks
+    for (auto & kv : taskSet) {
+        int id = kv.first;
+        TaskInfo & task = kv.second;
+        ProductMetadata m(task["inputs"][0]);
+        m["dirName"]  = cfg.storage.archive;
+        m["urlSpace"] = LocalArchSpace;
+        m["url"]      = ("file://" + cfg.storage.archive + "/" +
+                         m.baseName() + "." + m.extension());
+        inputFiles.products.push_back(m);
+    }    
+        
+    return retVal;
+}
+

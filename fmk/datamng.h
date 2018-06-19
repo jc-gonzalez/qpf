@@ -108,6 +108,13 @@ public:
     void saveTaskToDB(TaskInfo & taskInfo, bool initialStore = false);
 
     //----------------------------------------------------------------------
+    // Method: updateTaskStatusSpectra
+    // Refresh the table with the status of all tasks in all task agents
+    // (stored in the form of a materialized view)
+    //----------------------------------------------------------------------
+    void updateTaskStatusSpectra();
+
+    //----------------------------------------------------------------------
     // Method: storeTaskStatusSpectra
     // Store task agent spectra in DB
     //----------------------------------------------------------------------
@@ -118,7 +125,15 @@ public:
     // Retrieve task agent spectra from DB
     //----------------------------------------------------------------------
     void retrieveTaskStatusSpectra(TskStatTable & tssSet);
-    
+
+    //----------------------------------------------------------------------
+    // Method: getRestartableTaskInputs
+    // Returns the list of inputs that triggered the creation of new tasks,
+    // for the tasks that appear as scheduled or running in the database,
+    // at the start of the Core
+    //----------------------------------------------------------------------
+    bool getRestartableTaskInputs(ProductList & inputFiles);
+
 protected:
 
     //----------------------------------------------------------------------
