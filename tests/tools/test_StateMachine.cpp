@@ -8,24 +8,24 @@
 
 namespace TestStateMachine {
 
-TEST_F(TestStateMachine, Test_getState) {
-    
-}
+TEST_F(TestStateMachine, Test_StateMachine) {
+    EXPECT_EQ(sm.getState(), OFF);
+    EXPECT_EQ(sm.getStateName(sm.getState()), sm.getStateName(OFF));
+    EXPECT_EQ(sm.getStateIdx("OFF"), OFF);
 
-TEST_F(TestStateMachine, Test_setState) {
-    
-}
+    bool isValid = sm.transitTo(INITIALISED);
 
-TEST_F(TestStateMachine, Test_transitTo) {
-    
-}
+    EXPECT_EQ(isValid, true);
+    EXPECT_EQ(sm.getState(), INITIALISED);
+    EXPECT_EQ(sm.getStateName(sm.getState()), sm.getStateName(INITIALISED));
+    EXPECT_EQ(sm.getStateIdx("INITIALISED"), INITIALISED);
+    EXPECT_EQ(sm.getLastTransition(), std::string("OFF => INITIALISED"));
 
-TEST_F(TestStateMachine, Test_getStateName) {
-    
-}
+    isValid = sm.transitTo(OPERATIONAL);
 
-TEST_F(TestStateMachine, Test_getStateIdx) {
-    
+    EXPECT_EQ(isValid, false);
+    EXPECT_EQ(sm.getState(), INITIALISED);
+    EXPECT_EQ(sm.getLastTransition(), std::string("INITIALISED => OPERATIONAL"));
 }
 
 }           

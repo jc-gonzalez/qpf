@@ -252,7 +252,7 @@ void RWC::post(std::string url, std::string localFile,
 // Function to POST a string
 //------------------------------------------------------------
 void RWC::postContent(std::string url, std::string & content,
-                      std::string & result)
+                      std::string & result, std::string contentType)
 {
     std::string localFile = generateTmpFile();
     std::ofstream oFhdl(localFile);

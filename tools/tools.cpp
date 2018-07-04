@@ -67,12 +67,6 @@
 
 //namespace LibComm {
 
-template<class T>
-inline T max(T a, T b) { return (a > b) ? a : b; }
-
-template<class T>
-inline T min(T a, T b) { return (a < b) ? a : b; }
-
 static std::string specificSessionTag = std::string();
 
 //----------------------------------------------------------------------
@@ -365,7 +359,8 @@ double scanCPUTime(SysInfo * sysInfo)
         unsigned long long int idlealltime = idletime + ioWait;
         unsigned long long int systemalltime = systemtime + irq + softIrq;
         unsigned long long int virtalltime = guest + guestnice;
-        unsigned long long int totaltime = usertime + nicetime + systemalltime + idlealltime + steal + virtalltime;
+        unsigned long long int totaltime = (usertime + nicetime + systemalltime +
+                                            idlealltime + steal + virtalltime);
         CPUData & cpuData = sysInfo->cpuData[i];
 //        assert (usertime >= cpuData->userTime);
 //        assert (nicetime >= cpuData->niceTime);

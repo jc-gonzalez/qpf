@@ -99,7 +99,7 @@ void DirWatcher::watch(std::string pth)
     int wd = inotify_add_watch(fd, pth.c_str(),
                                IN_CLOSE_WRITE | IN_MOVED_TO | IN_CREATE);
     if (wd == -1) {
-        std::cerr << "Cannot watch '" << pth << "%s'\n";
+        std::cerr << "Cannot watch '" << pth << "'\n";
         perror("inotify_add_watch");
         exit(EXIT_FAILURE);
     }

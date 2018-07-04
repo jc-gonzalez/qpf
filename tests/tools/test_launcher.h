@@ -1,24 +1,24 @@
-#ifndef TEST_PIPE_STREAMBUF_H
-#define TEST_PIPE_STREAMBUF_H
+#ifndef TEST_Launcher_H
+#define TEST_Launcher_H
 
-#include "process.h"
+#include "launcher.h"
 #include "gtest/gtest.h"
 
-//using namespace pipe_streambuf;
+//using namespace Launcher;
 
-namespace Testpipe_streambuf {
+namespace TestLauncher {
 
-class Testpipe_streambuf : public ::testing::Test {
+class TestLauncher : public ::testing::Test {
 
 protected:
     // You can remove any or all of the following functions if its body
     // is empty.
 
     // You can do set-up work for each test here.
-    Testpipe_streambuf() {}
+    TestLauncher() {}
 
     // You can do clean-up work that doesn't throw exceptions here.
-    virtual ~Testpipe_streambuf() {}
+    virtual ~TestLauncher() {}
 
     // If the constructor and destructor are not enough for setting up
     // and cleaning up each test, you can define the following methods:
@@ -32,20 +32,20 @@ protected:
     virtual void TearDown() {}
 
     // Objects declared here can be used by all tests in the test case for Foo.
-    // pipe_streambuf::obj ev;
+    // Launcher::obj ev;
 };
 
-class Testpipe_streambufExit : public Testpipe_streambuf {
+class TestLauncherExit : public TestLauncher {
 
 protected:
     // You can remove any or all of the following functions if its body
     // is empty.
 
     // You can do set-up work for each test here.
-    Testpipe_streambufExit() {}
+    TestLauncherExit() {}
 
     // You can do clean-up work that doesn't throw exceptions here.
-    virtual ~Testpipe_streambufExit() {}
+    virtual ~TestLauncherExit() {}
 
     // If the constructor and destructor are not enough for setting up
     // and cleaning up each test, you can define the following methods:
@@ -63,4 +63,4 @@ protected:
 
 }
 
-#endif // TEST_PIPE_STREAMBUF_H
+#endif // TEST_Launcher_H

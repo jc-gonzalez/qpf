@@ -80,19 +80,19 @@ set (unitTestsSet_hdr
   str/test_str.h
   tools/test_Alert.h
   tools/test_DirWatcher.h
+  tools/test_filetools.h
   tools/test_MetadataInfo.h
   tools/test_MetadataReader.h
   tools/test_FitsMetadataReader.h
+  tools/test_launcher.h
   tools/test_PCRegEx.h
-  tools/test_pipe_t.h
-  tools/test_pipe_ostreambuf.h
-  tools/test_pipe_streambuf.h
   tools/test_process.h
   tools/test_pipeline.h
   tools/test_RWC.h
   tools/test_ScopeExit.h
   tools/test_StateMachine.h
   tools/test_Timer.h
+  tools/test_tools.h
   uuid/test_UUID.h
   vos/test_VOSpaceHandler.h
     )
@@ -163,20 +163,20 @@ set (unitTestsSet_src
   qpf/test_Deployer.cpp
   str/test_str.cpp
   tools/test_Alert.cpp
+  tools/test_filetools.cpp
   tools/test_DirWatcher.cpp
   tools/test_MetadataInfo.cpp
   tools/test_MetadataReader.cpp
   tools/test_FitsMetadataReader.cpp
+  tools/test_launcher.cpp
   tools/test_PCRegEx.cpp
-  tools/test_pipe_t.cpp
-  tools/test_pipe_ostreambuf.cpp
-  tools/test_pipe_streambuf.cpp
   tools/test_process.cpp
   tools/test_pipeline.cpp
   tools/test_RWC.cpp
   tools/test_ScopeExit.cpp
   tools/test_StateMachine.cpp
   tools/test_Timer.cpp
+  tools/test_tools.cpp
   uuid/test_UUID.cpp
   vos/test_VOSpaceHandler.cpp
     )
@@ -199,11 +199,12 @@ target_include_directories (unitTestsSet PUBLIC . ..
   ${STR_ROOT_DIR}
   ${UUID_ROOT_DIR}
   ${INFIX_ROOT_DIR}
+  ${PCRE2INCDIR}
   ${PSQLLIBDIR})
 target_link_libraries (unitTestsSet
   fmk json nncomm infix str log uuidxx
   nanomsg
-  ${UUIDLIB} ${PSQLLIB}
+  ${PCRE2LIB} ${UUIDLIB} ${PSQLLIB}
   pthread
   ${googleTestLibraries})
 

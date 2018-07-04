@@ -1,24 +1,24 @@
-#ifndef TEST_PIPE_T_H
-#define TEST_PIPE_T_H
+#ifndef TEST_PROCESS_H
+#define TEST_PROCESS_H
 
-#include "process.h"
+#include "filetools.h"
 #include "gtest/gtest.h"
 
-//using namespace pipe_t;
+//using namespace process;
 
-namespace Testpipe_t {
+namespace TestFiletools {
 
-class Testpipe_t : public ::testing::Test {
+class TestFiletools : public ::testing::Test {
 
 protected:
     // You can remove any or all of the following functions if its body
     // is empty.
 
     // You can do set-up work for each test here.
-    Testpipe_t() {}
+    TestFiletools() {}
 
     // You can do clean-up work that doesn't throw exceptions here.
-    virtual ~Testpipe_t() {}
+    virtual ~TestFiletools() {}
 
     // If the constructor and destructor are not enough for setting up
     // and cleaning up each test, you can define the following methods:
@@ -32,20 +32,20 @@ protected:
     virtual void TearDown() {}
 
     // Objects declared here can be used by all tests in the test case for Foo.
-    // pipe_t::obj ev;
+    // Filetools::obj ev;
 };
 
-class Testpipe_tExit : public Testpipe_t {
+class TestFiletoolsExit : public TestFiletools {
 
 protected:
     // You can remove any or all of the following functions if its body
     // is empty.
 
     // You can do set-up work for each test here.
-    Testpipe_tExit() {}
+    TestFiletoolsExit() {}
 
     // You can do clean-up work that doesn't throw exceptions here.
-    virtual ~Testpipe_tExit() {}
+    virtual ~TestFiletoolsExit() {}
 
     // If the constructor and destructor are not enough for setting up
     // and cleaning up each test, you can define the following methods:
@@ -63,4 +63,4 @@ protected:
 
 }
 
-#endif // TEST_PIPE_T_H
+#endif // TEST_FILETOOLS_H

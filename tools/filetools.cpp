@@ -119,11 +119,11 @@ int copyfile(std::string & sFrom, std::string & sTo)
 // Method: rcopyfile
 //----------------------------------------------------------------------
 int rcopyfile(std::string & sFrom, std::string & sTo,
-              std::string & remoteHost, bool toRemote)
+              std::string & remoteHost, bool fromRemote)
 {
     static std::string scp("/usr/bin/scp");
     std::string cmd;
-    if (toRemote) {
+    if (fromRemote) {
         cmd = scp + " " + remoteHost + ":" + sFrom + " " + sTo;
     } else {
         cmd = scp + " " + sFrom + " " + remoteHost + ":" + sTo;
@@ -138,7 +138,7 @@ int rcopyfile(std::string & sFrom, std::string & sTo,
 //----------------------------------------------------------------------
 // Method: runlink
 //----------------------------------------------------------------------
-    int runlink(std::string & f, std::string & remoteHost)
+int runlink(std::string & f, std::string & remoteHost)
 {
     std::string cmd;
     cmd = "ssh " + remoteHost + " rm " + f;

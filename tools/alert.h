@@ -113,7 +113,7 @@ public:
     };
 
     struct Variable {
-        Variable(std::string n) : name(n) {}
+        Variable(std::string n = std::string()) : name(n) {}
         std::string name;
         VarValue x;
         VarValue ll;

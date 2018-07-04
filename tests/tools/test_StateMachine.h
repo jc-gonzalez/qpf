@@ -6,14 +6,55 @@
 
 //using namespace StateMachine;
 
+static const int ERROR        = -1;
+static const int OFF          =  0;
+static const int INITIALISED  =  1;
+static const int RUNNING      =  2;
+static const int OPERATIONAL  =  3;
+
 namespace TestStateMachine {
 
 class TestStateMachine : public ::testing::Test {
-
+    
 protected:
     // You can remove any or all of the following functions if its body
     // is empty.
 
+    class MyStateMachine : public StateMachine {
+    public:
+        MyStateMachine() {
+            defineState(ERROR,        "ERROR");
+            defineState(OFF,          "OFF");
+            defineState(INITIALISED,  "INITIALISED");
+            defineState(RUNNING,      "RUNNING");
+            defineState(OPERATIONAL,  "OPERATIONAL");
+            
+            defineValidTransition(ERROR,        OFF);
+            defineValidTransition(OFF,          INITIALISED);
+            defineValidTransition(INITIALISED,  RUNNING);
+            defineValidTransition(INITIALISED,  OFF);
+            defineValidTransition(INITIALISED,  ERROR);
+            defineValidTransition(RUNNING,      OPERATIONAL);
+            defineValidTransition(RUNNING,      OFF);
+            defineValidTransition(RUNNING,      ERROR);
+            defineValidTransition(OPERATIONAL,  RUNNING);
+            defineValidTransition(OPERATIONAL,  OFF);
+            defineValidTransition(OPERATIONAL,  ERROR);
+        
+            setState(OFF);
+        }
+
+        std::string getLastTransition() { return lastTransit; }       
+    protected:
+        virtual void afterTransition(int fromState, int toState) {
+            lastTransit = (getStateName(fromState) + " => " +
+                           getStateName(toState));
+            StateMachine::afterTransition(fromState, toState);
+        }
+    private:
+        std::string lastTransit;
+    };
+            
     // You can do set-up work for each test here.
     TestStateMachine() {}
 
@@ -33,6 +74,10 @@ protected:
 
     // Objects declared here can be used by all tests in the test case for Foo.
     // StateMachine::obj ev;
+
+    // Valid Manager states
+    MyStateMachine sm;
+    
 };
 
 class TestStateMachineExit : public TestStateMachine {

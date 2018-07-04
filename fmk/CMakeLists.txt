@@ -84,7 +84,7 @@ target_include_directories (fmk PUBLIC .
 target_link_libraries (fmk
   json filehdl infix str log tools uuidxx nncomm vos
   nanomsg mongoose
-  ${PCRE2LIB} ${PSQLLIB}
+  ${PCRE2LIB} pcre2-8 ${PSQLLIB}
   uuid pthread)
 set_target_properties (fmk PROPERTIES LINKER_LANGUAGE CXX)
 install (TARGETS fmk

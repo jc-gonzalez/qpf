@@ -53,36 +53,36 @@
 //----------------------------------------------------------------------
 bool StateMachine::transitTo(int newState)
 {
-  int oldState = state;
-  bool isValid = false;
-  std::pair <std::multimap<int, int>::iterator,
-             std::multimap<int, int>::iterator> validFrom;
-
-  validFrom = validTransitions.equal_range(state);
-  for (std::multimap<int, int>::iterator it = validFrom.first;
-       it != validFrom.second; ++it) {
-    if (it->second == newState) {
-      isValid = true;
-      setState( newState );
-      break;
+    int oldState = state;
+    bool isValid = false;
+    std::pair <std::multimap<int, int>::iterator,
+               std::multimap<int, int>::iterator> validFrom;
+    
+    validFrom = validTransitions.equal_range(state);
+    for (std::multimap<int, int>::iterator it = validFrom.first;
+         it != validFrom.second; ++it) {
+        if (it->second == newState) {
+            isValid = true;
+            setState( newState );
+            break;
+        }
     }
-  }
-
-  if (!isValid) {
-    if (stateNames.find(newState) != stateNames.end()) {
-    //   Log::log("SYSTEM", invalidTransit,
-    //            "Component tried an invalid state transition from "
-    //            + stateNames[state] + " to " + stateNames[newState]);
-    } else {
-    //   Log::log("SYSTEM", invalidTransit,
-    //            "Component tried an invalid state transition from "
-    //            + stateNames[state] + " to an unknown state.");
+    
+    if (!isValid) {
+        if (stateNames.find(newState) != stateNames.end()) {
+            //   Log::log("SYSTEM", invalidTransit,
+            //            "Component tried an invalid state transition from "
+            //            + stateNames[state] + " to " + stateNames[newState]);
+        } else {
+            //   Log::log("SYSTEM", invalidTransit,
+            //            "Component tried an invalid state transition from "
+            //            + stateNames[state] + " to an unknown state.");
+        }
     }
-  }
-
-  afterTransition(oldState, newState);
-
-  return isValid;
+    
+    afterTransition(oldState, newState);
+    
+    return isValid;
 }
 
 //----------------------------------------------------------------------
@@ -99,7 +99,7 @@ void StateMachine::afterTransition(int fromState, int toState)
 //----------------------------------------------------------------------
 std::string StateMachine::getStateName(int aState)
 {
-  return stateNames[aState];
+    return stateNames[aState];
 }
 
 //----------------------------------------------------------------------
@@ -116,8 +116,8 @@ int StateMachine::getStateIdx(std::string aStateName)
 //----------------------------------------------------------------------
 void StateMachine::defineState(int aState, std::string name)
 {
-  stateNames[aState] = name;
-  stateIdx[name]     = aState;
+    stateNames[aState] = name;
+    stateIdx[name]     = aState;
 }
 
 //----------------------------------------------------------------------
@@ -126,7 +126,7 @@ void StateMachine::defineState(int aState, std::string name)
 //----------------------------------------------------------------------
 void StateMachine::defineValidTransition(int fromState, int toState)
 {
-  validTransitions.insert(std::make_pair(fromState, toState));
+    validTransitions.insert(std::make_pair(fromState, toState));
 }
 
 //}
