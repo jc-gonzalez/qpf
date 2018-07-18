@@ -47,13 +47,16 @@
 #include <fstream>
 #include <unistd.h>
 
+#include "rwc.h"
+
 using namespace FileTools;
 
 //------------------------------------------------------------
 // Constructor
 //------------------------------------------------------------
-VOSpaceHandler::VOSpaceHandler(std::string url) :
-    vOSpaceUrl(url)
+VOSpaceHandler::VOSpaceHandler(RWC * rwcPtr,
+                               std::string url) :
+    vOSpaceUrl(url), rwcHdl(rwcPtr)
 {
 }
 
@@ -62,6 +65,7 @@ VOSpaceHandler::VOSpaceHandler(std::string url) :
 //------------------------------------------------------------
 VOSpaceHandler::~VOSpaceHandler()
 {
+    delete rwcHdl;
 }
 
 //------------------------------------------------------------
@@ -84,7 +88,7 @@ void VOSpaceHandler::setAuth(std::string & u, std::string & p)
 }
 
 //------------------------------------------------------------
-// Method: setAuth
+// Method: uploadToFile
 // Creates a new file in VOSpace folder with specified content
 //------------------------------------------------------------
 bool VOSpaceHandler::uploadToFile(std::string folder, std::string file,
@@ -111,17 +115,16 @@ bool VOSpaceHandler::uploadFile(std::string folder, std::string file,
     std::string endPoint = vOSpaceUrl + "/service/data/";
     std::string jobId;
     
-    RWC rwc;
-    rwc.setAuth(user, pwd);
+    rwcHdl->setAuth(user, pwd);
     
-    if (! uploadJobRequest(rwc, folder, "pushToVoSpace", jobId)) {
+    if (! uploadJobRequest(folder, "pushToVoSpace", jobId)) {
         return false;
     }
 
     std::string uploadUrl = endPoint + user + "/" + jobId;
     std::string result;
     
-    rwc.post(uploadUrl, file, result, contentType);
+    rwcHdl->post(uploadUrl, file, result, contentType);
 
     std::cerr << "Result: [" << result << "]\n";
 
@@ -151,17 +154,16 @@ bool VOSpaceHandler::downloadFile(std::string folder, std::string file,
     std::string endPoint = vOSpaceUrl + "/service/data/";
     std::string jobId;
     
-    RWC rwc;
-    rwc.setAuth(user, pwd);
+    rwcHdl->setAuth(user, pwd);
     
-    if (! uploadJobRequest(rwc, folder + (file.empty() ? "" : "/" + file),
+    if (! uploadJobRequest(folder + (file.empty() ? "" : "/" + file),
                            "pullFromVoSpace", jobId)) {
         return false;
     }
 
     std::string downloadUrl = endPoint + user + "/" + jobId;
     std::string result;
-    rwc.get(downloadUrl, localFile, result);
+    rwcHdl->get(downloadUrl, localFile, result);
 
     std::cerr << "Result: [" << result << "]\n";
 
@@ -172,7 +174,7 @@ bool VOSpaceHandler::downloadFile(std::string folder, std::string file,
 // Method: uploadJobRequest
 // Uploads a job request in the form of XML, and launches it
 //------------------------------------------------------------
-bool VOSpaceHandler::uploadJobRequest(RWC & rwc, std::string folder,
+bool VOSpaceHandler::uploadJobRequest(std::string folder,
                                       std::string rqstType, std::string & jobId)
 {
     std::string txUrl    = vOSpaceUrl + "/servlet/transfers/async?PHASE=RUN";
@@ -183,7 +185,7 @@ bool VOSpaceHandler::uploadJobRequest(RWC & rwc, std::string folder,
     std::string txData(a);
     
     std::string result;
-    rwc.postContent(txUrl, txData, result);
+    rwcHdl->postContent(txUrl, txData, result);
     std::cerr << "Result: [" << result << "]\n";
     if (result.find("401 Unauthorized") != std::string::npos) { return false; }
     
@@ -196,7 +198,7 @@ bool VOSpaceHandler::uploadJobRequest(RWC & rwc, std::string folder,
     std::string phase("");
     do {
         std::string content;
-        rwc.getContent(redirection, content, result);
+        rwcHdl->getContent(redirection, content, result);
         std::cerr << content << '\n' << result << '\n';
         
         size_t posFrom = content.find("<uws:phase>") + 11;

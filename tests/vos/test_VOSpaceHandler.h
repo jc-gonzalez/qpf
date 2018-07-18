@@ -2,6 +2,7 @@
 #define TEST_VOSPACEHANDLER_H
 
 #include "voshdl.h"
+
 #include "gtest/gtest.h"
 
 //using namespace VOSpaceHandler;

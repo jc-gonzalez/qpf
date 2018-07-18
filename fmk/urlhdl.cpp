@@ -55,6 +55,7 @@
 #include "str.h"
 #include "config.h"
 #include "voshdl.h"
+#include "rwc.h"
 
 #include "dbg.h"
 
@@ -504,7 +505,7 @@ bool URLHandler::sendToVOSpace(std::string user, std::string pwd,
                                std::string vosURL, std::string folder,
                                std::string oFile)
 {
-    VOSpaceHandler vos(vosURL);
+    VOSpaceHandler vos(new RWC, vosURL);
     vos.setAuth(user, pwd);
     if (!vos.uploadFile(folder, oFile)) {
         TRC("ERROR! Cannot upload " << oFile);

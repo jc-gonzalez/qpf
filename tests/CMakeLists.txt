@@ -74,7 +74,6 @@ set (unitTestsSet_hdr
   nncomm/test_ProtocolLayer.h
   nncomm/test_PubSub.h
   nncomm/test_ReqRep.h
-  nncomm/test_ScalabilityProtocolRole.h
   nncomm/test_Survey.h
   qpf/test_Deployer.h
   str/test_str.h
@@ -95,6 +94,8 @@ set (unitTestsSet_hdr
   tools/test_tools.h
   uuid/test_UUID.h
   vos/test_VOSpaceHandler.h
+  
+  vos/rwc-mock.h
     )
 
 set (unitTestsSet_src
@@ -158,7 +159,6 @@ set (unitTestsSet_src
   nncomm/test_ProtocolLayer.cpp
   nncomm/test_PubSub.cpp
   nncomm/test_ReqRep.cpp
-  nncomm/test_ScalabilityProtocolRole.cpp
   nncomm/test_Survey.cpp
   qpf/test_Deployer.cpp
   str/test_str.cpp

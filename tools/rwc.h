@@ -71,9 +71,13 @@ public:
     
     //------------------------------------------------------------
     // Constructor
-    // Generate a temporary file with unique file name in /tmp
     //------------------------------------------------------------
     RWC();
+    
+    //------------------------------------------------------------
+    // Destructor
+    //------------------------------------------------------------
+    ~RWC();
     
     //------------------------------------------------------------
     // Method: getContent
@@ -81,7 +85,7 @@ public:
     // a string
     //------------------------------------------------------------
     void getContent(std::string url, std::string & content,
-                    std::string & result);
+                            std::string & result);
     
     //------------------------------------------------------------
     // Method: get
@@ -89,22 +93,25 @@ public:
     // the form of an output file
     //------------------------------------------------------------
     void get(std::string url, std::string localFile,
-             std::string & result);
+                     std::string & result);
 
     //------------------------------------------------------------
     // Mwthod: post_
     // Function to POST the content of a file
     //------------------------------------------------------------
-    void post(std::string url, std::string localFile, std::string & result,
-              std::string contentType = std::string("application/xml"));
+    void post(std::string url, std::string localFile,
+                      std::string & result,
+                      std::string contentType =
+                      std::string("application/xml"));
     
     //------------------------------------------------------------
     // Mwthod: postContent
     // Function to POST a string
     //------------------------------------------------------------
     void postContent(std::string url, std::string & content,
-                     std::string & result,
-                     std::string contentType = std::string("application/xml"));
+                             std::string & result,
+                             std::string contentType =
+                             std::string("application/xml"));
 
     //------------------------------------------------------------
     // Method: setAuth
@@ -112,8 +119,12 @@ public:
     //------------------------------------------------------------
     void setAuth(std::string & u, std::string & p,
                  long aut = (long)CURLAUTH_BASIC);
-    
- private:
+
+protected:
+    std::string user;
+    std::string pwd;
+    long authType;
+    bool isAuthSet;
 
     size_t (*readFunc)(void *ptr, size_t size,
                        size_t nmemb, void *userp);
@@ -121,12 +132,6 @@ public:
                          size_t nmemb, void *userp);
     size_t (*mwriteFunc)(void *ptr, size_t size,
                          size_t nmemb, void *userp);
-
-    std::string user;
-    std::string pwd;
-    long authType;
-    bool isAuthSet;
-
 };
 
 #endif // RWC_H

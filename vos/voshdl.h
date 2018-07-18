@@ -42,7 +42,7 @@
 
 #include <string>
 
-#include "rwc.h"
+class RWC;
 
 //======================================================================
 // Class: VOSpaceHandler
@@ -56,12 +56,13 @@ public:
     //------------------------------------------------------------
     // Constructor
     //------------------------------------------------------------
-    explicit VOSpaceHandler(std::string url = std::string());
+    explicit VOSpaceHandler(RWC * rwcPtr,
+                            std::string url = std::string());
 
     //------------------------------------------------------------
     // Destructor
     //------------------------------------------------------------
-    ~VOSpaceHandler();
+    virtual ~VOSpaceHandler();
 
     //------------------------------------------------------------
     // Method: setVOSpaceUrl
@@ -109,10 +110,11 @@ protected:
     // Method: uploadJobRequest
     // Uploads a job request in the form of XML, and launches it
     //------------------------------------------------------------
-    bool uploadJobRequest(RWC & rwc, std::string folder,
+    bool uploadJobRequest(std::string folder,
                           std::string rqstType, std::string & jobId);
 
 private:
+    RWC * rwcHdl;
     std::string vOSpaceUrl;
     std::string user;
     std::string pwd;

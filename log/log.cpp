@@ -65,7 +65,7 @@ std::map<std::string, std::vector<std::string> > Log::logBuffer;
 std::map<std::string, bool> Log::dateChangeShown = {};
 std::string Log::dateString("");
 
-std::string Log::logBaseDir = std::string("/qpf/run");
+std::string Log::logBaseDir("/qpf/run");
 
 const std::string Log::System = std::string("SYSTEM");
 
