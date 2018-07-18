@@ -213,7 +213,7 @@ target_include_directories (qpfgui PUBLIC .
   ${PSQLINCDIR})
 target_link_libraries (qpfgui qpfGuiLib 
   json infix str log tools uuid fmk nncomm
-  nanomsg ${PCRE2LIB} ${PSQLLIB} pthread)
+  nanomsg ${PCRE2LIB} ${PSQLLIB} harfbuzz pthread)
 set_target_properties (qpfgui PROPERTIES LINKER_LANGUAGE CXX)
 
 install (TARGETS qpfGuiLib qpfgui

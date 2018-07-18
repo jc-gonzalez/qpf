@@ -24,8 +24,12 @@ SET check_function_bodies = false;
 SET client_min_messages = warning;
 
 -- ----------------------------------------------------------------------
--- Name: plpgsql; Type: EXTENSION; Schema: -; Owner:
+-- Name: tablefunc (crosstab); Type: EXTENSION; Schema: -; Owner:
 CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
+
+-- ----------------------------------------------------------------------
+-- Name: plpgsql; Type: EXTENSION; Schema: -; Owner:
+CREATE EXTENSION IF NOT EXISTS tablefunc;
 
 -- ----------------------------------------------------------------------
 -- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner:

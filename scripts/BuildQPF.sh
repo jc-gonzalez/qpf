@@ -114,9 +114,10 @@ greetings () {
 }
 
 usage () {
-    local opts="[ -h ] [ -c ] [ -i ] [ -n ] [ -r ] [ -b ] [ -w ] [ -D def ] [ -D def ] [ -p ]"
-    opts="$opts [ -W <path> ] [ -H <host> ] [ -P <port> ] [ -I <ip> ] [ -v ]"
-    say "Usage: ${SCRIPT_NAME} $opts"
+    local opts1="[ -h ] [ -c ] [ -i ] [ -n ] [ -r ] [ -b ] [ -w ] [ -B def ] [ -D def ] [ -p ]"
+    local opts2="[ -I <ip> ] [ -H <host> ] [ -P <port> ] [ -W <path> ] [ -v ]"
+    say "Usage: ${SCRIPT_NAME} $opts1"
+    say "                   $opts2"
     say "where:"
     say "  -h         Show this usage message"
     say "  -c         Compile the source code"
@@ -128,10 +129,10 @@ usage () {
     say "  -B DEF     Define build macros"
     say "  -D DEF     Define compile macros"
     say "  -p         Processing-only node: do not compile QPF HMI"
-    say "  -W <path>  Folder to locate QPF working area (default:HOME)"
+    say "  -I <ip>    IP address to use in the sample config. file"
     say "  -H <host>  Host where system database is located (default:${PSQL_HOST})"
     say "  -P <port>  Port to access the database (default:${PSQL_PORT})"
-    say "  -I <ip>    IP address to use in the sample config. file"
+    say "  -W <path>  Folder to locate QPF working area (default:HOME)"
     say "  -v         Make output verbose"
     say ""
     exit 1
@@ -362,7 +363,7 @@ if [ "${INSTALL}" == "yes" ]; then
         ln -sf ${WORK_AREA}/qpf/bin/qpfgui ${WORK_AREA}/qpf/bin/qpfhmi
     fi
 
-    install_scpt RunQPF.sh
+    #install_scpt RunQPF.sh
     install_scpt qpfapp
 
     if [ ! -d "'${HOME}/.qpf'" ]; then
@@ -451,14 +452,14 @@ say "  - include the directory ${WORK_AREA}/qpf/bin in the PATH variable, and"
 say "  - include the directory ${WORK_AREA}/qpf/lib in the LD_LIBRARY_PATH variable."
 say "To do that, just execute the following commands:"
 say "  export PATH=${WORK_AREA}/qpf/bin:${WORK_AREA}/qpf/scripts:${WORK_AREA}/qpf/scripts/lib:\$PATH"
-say "  export LD_LIBRARY_PATH=${WORK_AREA}/qpf/lib:\$LD_LIBRARY_PATH"
+say "  export LD_LIBRARY_PATH=${WORK_AREA}/qpf/lib:${WORK_AREA}/qpf/lib64:\$LD_LIBRARY_PATH"
 
 (cat ~/env_qpf.sh 2>/dev/null ; echo ""; echo "# BuildQPF section") | \
 awk '(NR==1),/BuildQPF section/' > /tmp/$$.sh
 cat /tmp/$$.sh > ~/env_qpf.sh
 cat <<EOF>> ~/env_qpf.sh
 export PATH=${WORK_AREA}/qpf/bin:${WORK_AREA}/qpf/scripts:${WORK_AREA}/qpf/scripts/lib:\$PATH
-export LD_LIBRARY_PATH=${WORK_AREA}/qpf/lib:\$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=${WORK_AREA}/qpf/lib:${WORK_AREA}/qpf/lib64:\$LD_LIBRARY_PATH
 EOF
   
 say ""

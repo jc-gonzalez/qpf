@@ -17,7 +17,7 @@ sudo chmod 777 /var/run/postgresql
 sudo chown -R postgres:postgres /var/run/postgresql
 
 # Try to start server
-pg_ctl -D /home/eucops/opt/pgsql/data -l /home/eucops/opt/pgsql/data/log start
+pg_ctl -D /home/eucops/opt/pgsql/data -l logfile start
 
 # Check server status
 status=$(pg_ctl -D /home/eucops/opt/pgsql/data status 2>&1 | head -1 | cut -d" " -f 4)

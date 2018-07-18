@@ -170,21 +170,22 @@ if [ "${PGSQL}" = "yes" ]; then
 
 	# For LODEEN (CentOS based), the currently available PostgreSQL
 	# version by default is 9.2, but we need 9.4+
-	# We install a PGDG for 9.6, and then install the 9.6 packages
-	PSQL_PGDG="https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/pgdg-centos96-9.6-3.noarch.rpm" 
-	PSQL_PKGS="postgresql96.x86_64" 
-	PSQL_PKGS="$PSQL_PKGS postgresql96-devel.x86_64" 
-	PSQL_PKGS="$PSQL_PKGS postgresql96-libs.x86_64" 
-	PSQL_PKGS="$PSQL_PKGS postgresql96-server.x86_64" 
-	PSQL_PKGS="$PSQL_PKGS postgresql96-docs.x86_64"
+	# We install a PGDG for 10, and then install the 10 packages
+	PSQL_PGDG="https://download.postgresql.org/pub/repos/yum/10/redhat/rhel-7-x86_64/pgdg-centos10-10-2.noarch.rpm"
+	PSQL_PKGS="postgresql10.x86_64" 
+	PSQL_PKGS="$PSQL_PKGS postgresql10-devel.x86_64" 
+	PSQL_PKGS="$PSQL_PKGS postgresql10-libs.x86_64" 
+	PSQL_PKGS="$PSQL_PKGS postgresql10-server.x86_64" 
+	PSQL_PKGS="$PSQL_PKGS postgresql10-docs.x86_64"
+        PSQL_PKGS="$PSQL_PKGS postgresql10-contrib.x86_64"
     
 	#- 1. Installing PostgreSQL
 	say ". Installing packages"
 	sudo yum -y install ${PSQL_PGDG}
 	sudo yum -y install ${PSQL_PKGS}
-    sudo yum install -y libpq\*
+        sudo yum install -y libpq\*
 
-	PSQL_PTH=/usr/pgsql-9.6
+	PSQL_PTH=/usr/pgsql-10
     fi
 
     #- 2. Setting up the database
@@ -196,13 +197,16 @@ if [ "${PGSQL}" = "yes" ]; then
     sudo mkdir -p /opt
 
     if [ "${PSQL_PTH}" != "/usr/pgsql" ]; then
+        sudo rm /usr/pgsql
 	sudo ln -s ${PSQL_PTH} /usr/pgsql
     fi
     sudo ln -s ${PSQL_PTH} /opt/pgsql
     
     PSQL_PTH=/usr/pgsql
     export PATH=$PATH:${PSQL_PTH}/bin
-    
+   
+    sudo ln -s ${PSQL_PTH}/pg_ctl /usr/bin/pgctl
+ 
     # Then, for the creation of the local folder, initialization and server start, 
     # use the scripts =scripts/pgsql_start_server.sh= and =scripts/pgsql_initdb.sh=
 
@@ -231,7 +235,7 @@ if [ "${QT}" = "yes" ]; then
 	sudo yum -y list qt5-*x86_64 | grep -v -- -examples|grep qt5- | awk '{print $1;}' | tee /tmp/qt5pkgs.list
 	
 	# Install packages
-	sudo yum -y install --skip-broken $(cat /tmp/qt5pkgs.list)
+	sudo yum -y install --skip-broken $(cat /tmp/qt5pkgs.list) harfbuzz-devel.x86_64
 
 	QT5_PTH=$(echo /usr/lib64/qt5)
     fi
