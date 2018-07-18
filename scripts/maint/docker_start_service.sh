@@ -12,5 +12,17 @@
 # History    : See <Changelog>
 ###############################################################################
 
-sudo service docker start
+# Add the docker group if it doesn't already exist
+sudo groupadd docker
+
+# Add the connected user "$USER" to the docker group
+sudo gpasswd -a $USER docker
+
+# Update env.
+newgrp docker
+
+# Start service docker
+service docker start
+#sudo service docker start
+
 

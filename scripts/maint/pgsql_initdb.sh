@@ -14,6 +14,6 @@
 
 rm -rf /home/eucops/opt/pgsql/data 
 mkdir -p  /home/eucops/opt/pgsql/data
-pg_ctl -D /home/eucops/opt/pgsql/data initdb
+pg_ctl -D /home/eucops/opt/pgsql/data -l /home/eucops/opt/pgsql/logfile initdb
 
  

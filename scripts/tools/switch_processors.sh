@@ -33,6 +33,22 @@ case $act in
             ln -sf sample-${i}-fake.cfg.json sample.cfg.json
         done
         ;;
+    le1)
+        for i in VIS NISP; do
+            le1=LE1_${i}_Processor
+            cd ${BINPATH}/${le1}
+            ln -sf convert${i}2QLA.py driver.py
+            ln -sf sample-${i}-emu.cfg.json sample.cfg.json
+        done
+        ;;
+    le1fake)
+        for i in VIS NISP; do
+            le1=LE1_${i}_Processor
+            cd ${BINPATH}/${le1}
+            ln -sf driver-${i}-fake.py driver.py
+            ln -sf sample-${i}-fake.cfg.json sample.cfg.json
+        done
+        ;;
     *)
         ;;
 esac
