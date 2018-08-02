@@ -376,8 +376,8 @@ void MainWindow::manualSetupUI()
     std::vector<std::string> pTypes;
     int siz = 0;
     for (auto & s : cfg.products.productTypes()) {
-	pTypes.push_back(s);
-	if (s.length() > siz) { siz = s.length(); } 
+	    pTypes.push_back(QString::fromStdString(s).replace("_LOG", "-LOG").toStdString());
+	    if (s.length() > siz) { siz = s.length(); } 
     }
 
     // 4. Local Archive Products Model
@@ -1435,13 +1435,23 @@ void MainWindow::updateLocalArchModel()
     actHdl->getAcReprocess()->setEnabled(cfg.flags.allowReprocessing());
     
     // Update view
-    productsModel->refresh();
+    {
+        int sortCol = ui->treevwArchive->header()->sortIndicatorSection();
+        Qt::SortOrder sortOrd = ui->treevwArchive->header()->sortIndicatorOrder();
+ 
+        productsModel->refresh();
+ 
+        ui->treevwArchive->sortByColumn(sortCol, sortOrd);
+    }
     if (expandProductsModel) {
         ui->treevwArchive->expandAll();
     }
     if (resizeProductsModel) {
         resizeLocalArch();
     }
+     
+    //ui->treevwArchive->hideColumn(0);
+    //ui->treevwArchive->hideColumn(1);
 }
 
 //----------------------------------------------------------------------

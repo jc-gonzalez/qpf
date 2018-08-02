@@ -22,7 +22,7 @@ std::string tail(std::string const& source, size_t const length) {
 } // tail
 
 namespace TestLog {
-
+/*
 TEST_F(TestLog, Test_log) {
     Log::log(Log::System, Log::DEBUG, "Message # 1");
 
@@ -32,7 +32,7 @@ TEST_F(TestLog, Test_log) {
     EXPECT_EQ(existsGetLastLine(file, lastLine), true);
     EXPECT_EQ(tail(lastLine), 
 }
-
+*/
 TEST_F(TestLog, Test_getLastLogMsgs) {
     
 }

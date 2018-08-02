@@ -90,6 +90,7 @@ protected:
     QString     queryString;
     QStringList headerLabels;
     int         rowsFromQuery;
+    int         lastRetrievedId;
     int         skippedColumns;
     bool        boldHeader;
     QString     initialQuery;

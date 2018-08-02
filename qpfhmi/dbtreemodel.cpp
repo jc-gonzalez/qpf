@@ -75,6 +75,7 @@ DBTreeModel::DBTreeModel(QString q, QStringList hdr) :
     queryString(q),
     headerLabels(hdr),
     rowsFromQuery(-1),
+    lastRetrievedId(0),
     skippedColumns(-1),
     boldHeader(false),
     initialSkippedColumns(-1),
@@ -133,8 +134,27 @@ void DBTreeModel::skipColumns(int n)
 void DBTreeModel::refresh()
 {
     if (! queryString.isEmpty()) {
-        execQuery(queryString, DBManager::getDB());
+        QString qryStr(queryString);
+        if (lastRetrievedId > 0) { 
+            qryStr.replace("@WHERE@", QString(" WHERE p.id > %1").arg(lastRetrievedId));  
+        } else {
+            qryStr.replace("@WHERE@", "");
+        }
+        std::cerr << qryStr.toStdString() << '\n';
+        execQuery(qryStr, DBManager::getDB());
     }
+}
+
+void traverse(QAbstractItemModel* model, QModelIndex parent = QModelIndex()) 
+{
+	for (int r = 0; r < model->rowCount(parent); ++r) {
+		QModelIndex index = model->index(r, 0, parent);
+		QVariant name = model->data(index);
+		std::cerr << name.toString().toStdString() << '\n';
+		// here is your applicable code
+		if (model->hasChildren(index)) { traverse(model, index); }
+	}
+
 }
 
 void DBTreeModel::execQuery(QString & qry, QSqlDatabase & db)
@@ -142,19 +162,17 @@ void DBTreeModel::execQuery(QString & qry, QSqlDatabase & db)
     // Perform query
     QSqlQuery q(qry, db);
     QSqlRecord rec = q.record();
+    
+    int numOfRecordsRetrieved = q.size();
+    if (numOfRecordsRetrieved < 1) { return; }
+    
     int fldCount = rec.count();
 
+    std::cerr << "Num. of records retrieved: " << numOfRecordsRetrieved << '\n';
+    
     //if ((q.size() == rowsFromQuery) && (!isCustomFilter)) { return; }
 
-    clear();
-
-    // Create root item
-    QStandardItem * root = invisibleRootItem();
-    QStandardItem * parent;
-    QList<QStandardItem *> row;
-    QString prevGrp("");
-
-    rowsFromQuery = 0;
+    //clear();
 
     if (headerLabels.count() < 1) {
         for (int i = 0; i < rec.count(); ++i) {
@@ -162,6 +180,7 @@ void DBTreeModel::execQuery(QString & qry, QSqlDatabase & db)
         }
     }
 
+/*
     if (isCustomFilter) {
         while (q.next()) {
             row.clear();
@@ -174,52 +193,107 @@ void DBTreeModel::execQuery(QString & qry, QSqlDatabase & db)
         setHeaders(headerLabels);
         return;
     }
+*/  
+
+    // Create root item
+    QStandardItem * root = invisibleRootItem();
+    QStandardItem * parent;
+    QModelIndex rootIdx;
+    QModelIndex parentIdx;
+
+    QList<QStandardItem *> rowItems;
     
-    int children = 0;
+    QString prevGrpName("");
+    int numOfParentRows = rowCount(rootIdx);
+    int grp = 0;
+    int chld = 0;
+
+    rowsFromQuery = 0;
+    uint internal_id;
+
+    // Loop over all the results from the query
     while (q.next()) {
-#define GROUP_ROW_EMPTY
-#ifdef  GROUP_ROW_EMPTY
-        QString grp = q.value(0).toString();
-        if (prevGrp != grp) {
-            parent = new QStandardItem(grp);
-            parent->setFlags(parent->flags() & ~Qt::ItemIsSelectable);
-            row.clear();
-            row << parent;
-            for (int i = 1; i < fldCount - skippedColumns; ++i) { row << 0; }
-            root->appendRow(row);
-            children = 0;
-            prevGrp = grp;
+        
+        QString id = q.value(0).toString();
+        
+        internal_id = q.value(fldCount - 1).toUInt();
+        if (internal_id > lastRetrievedId) {
+            lastRetrievedId = internal_id;
+            std::cerr << "Last retrieved ID set to " << lastRetrievedId << '\n';
         }
-        row.clear();
-        for (int i = skippedColumns; i < fldCount; ++i) {
-            row << new QStandardItem(q.value(i).toString());
-        }
-        parent->appendRow(row);
-#else
-        QString grp = q.value(0).toString();
-        row.clear();
-        if (prevGrp != grp) {
-            parent = new QStandardItem(q.value(skippedColumns).toString());
-            row << parent;
-            for (int i = skippedColumns + 1; i < fldCount; ++i) {
-                row << new QStandardItem(q.value(i).toString());
+        
+        // Iterate on root items looking for id
+        for (grp = 0; grp < numOfParentRows; ++grp) {
+            QModelIndex grpIdx = index(grp, 0, rootIdx);
+            QString grpId = data(grpIdx).toString();
+            if (grpId == id) {
+                // Add new child to parent found
+                parent = itemFromIndex(grpIdx);
+                for (int i = 0; i < fldCount; ++i) { rowItems << new QStandardItem(q.value(i).toString()); }
+                    
+                chld = rowCount(grpIdx);
+                
+                beginInsertRows(grpIdx, chld, chld);
+                parent->appendRow(rowItems);
+                endInsertRows();
+                
+                rowItems.clear();
+                std::cerr << "Appending additional child '" << q.value(0).toString().toStdString() << "'\n";
+                break;
             }
-            root->appendRow(row);
-            children = 0;
-            prevGrp = grp;
-        } else {
-            std::cerr << "Skipping " << skippedColumns << " columns\n";
-            for (int i = skippedColumns; i < fldCount; ++i) {
-                row << new QStandardItem(q.value(i).toString());
-            }
-            parent->appendRow(row);
         }
-#endif
-        ++rowsFromQuery;
-        ++children;
+        if (grp == numOfParentRows) {
+            // Final encountered, exit this loop
+            q.previous();
+            break;
+        }
     }
     
+    // Loop over rest of the results from the query
+    while (q.next()) {
+        
+        QString grpName = q.value(0).toString();
+        internal_id = q.value(fldCount - 1).toUInt();
+        if (internal_id > lastRetrievedId) {
+            lastRetrievedId = internal_id;
+            std::cerr << "Last retrieved ID set to " << lastRetrievedId << '\n';
+        }
+
+        // Is it the in same group in the results
+        if (prevGrpName != grpName) {
+            // NO: A new group must be created in the model 
+            parent = new QStandardItem(grpName);
+            parent->setFlags(parent->flags() & ~Qt::ItemIsSelectable);
+            rowItems << parent;
+            for (int i = 1; i < fldCount; ++i) rowItems << 0; 
+            parentIdx = indexFromItem(parent);
+            std::cerr << "Appending new parent '" << grpName.toStdString() << "'\n";
+                
+            beginInsertRows(rootIdx, grp, grp);
+            root->appendRow(rowItems);
+            endInsertRows();
+
+            rowItems.clear();
+            prevGrpName = grpName;
+            ++grp;
+            chld = 0;
+        }
+
+        for (int i = 0; i < fldCount; ++i) { rowItems << new QStandardItem(q.value(i).toString()); }
+        std::cerr << "Appending new child '" << q.value(0).toString().toStdString() << "'\n";
+        
+        beginInsertRows(parentIdx, chld, chld);
+        parent->appendRow(rowItems);
+        endInsertRows();
+
+        rowItems.clear();
+        ++chld;
+    }
+    
+    // Finally, add headers if needed
     setHeaders(headerLabels);
 }
 
 }
+
+

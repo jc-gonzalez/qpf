@@ -43,42 +43,25 @@
 namespace QPF {
 
 ProductsModel::ProductsModel(std::vector<std::string> & pTypes, 
-			     int siz)
+                             int siz)
 {
     stringWithProductTypes = "";
     for (auto & s: pTypes) {
-        std::string ss = s + "                                ";
-	stringWithProductTypes += ss.substr(0, siz);
+        std::string ss(s + "                                ");
+        stringWithProductTypes += ss.substr(0, siz);
     }
     singleProdTypeLen = siz;
 
-    /*
-    defineQuery("SELECT  "
-                "    concat(i.instrument, ':', p.signature) AS Signature,  "
-                "    p.product_id as ID,  "
-                "    p.product_type as Type,  "
-                "    p.product_version as Version,  "
-                "    p.product_size as Size,  "
-                "    ps.status_desc as Status,  "
-                "    c.creator_desc as Creator,  "
-                "    o.obsmode_desc as ObsMode,  "
-                "    p.start_time as Start,  "
-                "    p.end_time as End,  "
-                "    p.registration_time as RegTime,  "
-                "    p.url as URL "
-                "FROM products_info p  "
-                "INNER JOIN instruments i ON p.instrument_id = i.instrument_id  "
-                "INNER JOIN product_status ps ON p.product_status_id = ps.product_status_id  "
-                "INNER JOIN creators c ON p.creator_id = c.creator_id  "
-                "INNER JOIN observation_modes o ON p.obsmode_id = o.obsmode_id  "
-                "ORDER BY concat(i.instrument, '.',  "
-                "                p.signature, '.',  "
-                "                right(concat('00000000000000000000', p.ID), 20)),"
-                "                p.registration_time;");
-    */
     defineQuery(QString::fromStdString(
-		"SELECT  "
+                "SELECT  "
                 "    left(p.signature, 7) AS ObsId_Exp,  "
+                "    concat(left(p.signature, 7), '.', "
+                "                cast(position(cast(p.instrument_id as char) "
+		        "                              in ' VNS') as char), '.', "
+                "                to_char(position(p.product_type in '" + 
+                stringWithProductTypes + "') / " + 
+                std::to_string(singleProdTypeLen) + ", 'FM00MI'), '.', "
+                "                p.product_version) as idx, "
                 "    p.product_id as ID,  "
                 "    p.product_type as Type,  "
                 "    p.product_version as Version,  "
@@ -89,23 +72,19 @@ ProductsModel::ProductsModel(std::vector<std::string> & pTypes,
                 "    p.start_time as Start,  "
                 "    p.end_time as End,  "
                 "    p.registration_time as RegTime,  "
-                "    p.url as URL "
+                "    p.url as URL, "
+                "    p.id as internal_id "
                 "FROM products_info p  "
-                "ORDER BY concat(left(p.signature, 7), '.', "
-                "                cast(position(cast(p.instrument_id as char) "
-		"                              in ' VNS') as char), '.', "
-                "                to_char(position(p.product_type in '" + 
-		stringWithProductTypes + "') / " + 
-		std::to_string(singleProdTypeLen) + ", 'FM00MI'), '.', "
-                "                p.product_version);"
+                "@WHERE@ "
+                "ORDER BY idx;"
 		));
 
-    defineHeaders({//"Signature",
+    defineHeaders({"Signature", "Idx",
                    "Product Id", "Type", "Version",
                    "Size", "Status", "Creator", "Obs.Mode",
-                   "Start", "End", "Reg.Time", "URL"});
+                   "Start", "End", "Reg.Time", "URL", "IntID"});
 
-    skipColumns(1);
+   // skipColumns(1);
 
     refresh();
 }
