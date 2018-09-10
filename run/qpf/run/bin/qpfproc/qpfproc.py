@@ -13,9 +13,10 @@ import re
 import json
 import subprocess
 import logging
+import string
 
 
-VERSION = '0.1.0'
+VERSION = '0.2.0'
 
 __author__ = "jcgonzalez"
 __version__ = VERSION
@@ -103,7 +104,7 @@ class Processor(object):
             cmd_line += ' &'
 
         open(out_file, 'a').close()
-            
+
         output = subprocess.check_output(cmd_line, shell=True)
 
     @staticmethod
@@ -112,7 +113,7 @@ class Processor(object):
             pid = os.fork()
         except OSError:
             logging.fatal('Could not create a child process')
-     
+
         if pid == 0:
             Processor.call(task_dir, cmd_line, out_file)
             exit()
@@ -170,6 +171,14 @@ class Processor(object):
         self.task_id = os.path.basename(task_dir)
 
         self.cfg_file = cfg_file
+
+        # Check if we are already running inside a Container (DckQPF)
+        self.alreadyInsideContainer = (os.getenv('DCKQPF', 'no') == 'yes')
+        if self.alreadyInsideContainer:
+            # Retrieve DckQPF info
+            self.dckQpfId  = os.getenv('HOSTNAME')
+            self.dckRunSrc = os.getenv('DCKRUNSRC')
+            self.dckRunTgt = os.getenv('DCKRUNTGT')
 
         #dck_opts = "-i -t"  # Interactive
         dck_opts = "-d -P"  # Daemon mode
@@ -246,12 +255,24 @@ class Processor(object):
                 'proc_dir': [self.proc_dir, self.proc_dir_img]}
         self.mapping = ""
         for mkey, mval in maps.iteritems():
-            self.mapping += " -v {0}:{1}".format(mval[0], mval[1])
+            self.mapping += " -v {0}:{1}".format(self.normMntPt(mval[0]), mval[1])
 
         uid = os.getuid()
         dck_opts_str = "{0} -e UID={1} -e UNAME=eucops -e WDIR={2} -w={2} --privileged=true"
         self.dck_opts = dck_opts_str.format(dck_opts, uid, self.task_dir_img)
         self.dck_image = self.cfg["image"] #Processor.QPFDckImageDefault
+
+    def normMntPt(self, fld):
+        '''
+        Normalize folder to 0-order file system in case of Docker in Docker call
+        :param fld: folder, to replace run section in case of sub-container
+        '''
+        fldRpl = fld
+        if self.alreadyInsideContainer:
+            if fld.startswith(self.dckRunTgt):
+                fldRpl = fld.replace(self.dckRunTgt, self.dckRunSrc)
+
+        return fldRpl
 
     def run(self, arguments=None, additional="", container=None):
         '''
@@ -269,7 +290,7 @@ class Processor(object):
         #os.symlink(self.proc_dir + "/" + self.script,
         #           self.task_dir + "/" + self.script)
 
-        cmd_line = "python {0}/{1}/{2} {3} {4}".format(self.proc_dir_img, 
+        cmd_line = "python {0}/{1}/{2} {3} {4}".format(self.proc_dir_img,
                                                        self.processor,
                                                        self.script,
                                                        script_args, additional)
@@ -277,7 +298,7 @@ class Processor(object):
             use_containers = self.cfg['container']
         else:
             use_containers = container
-        
+
         if not use_containers:
             ofile = self.task_dir + "/" + self.processor + ".nfo"
             call_cmd_line = cmd_line
@@ -291,3 +312,4 @@ class Processor(object):
         Processor.run_subprocess(task_dir=self.task_dir,
                                  cmd_line=call_cmd_line,
                                  out_file=ofile)
+
