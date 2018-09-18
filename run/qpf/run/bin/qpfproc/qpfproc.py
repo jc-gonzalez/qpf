@@ -177,8 +177,8 @@ class Processor(object):
         if self.alreadyInsideContainer:
             # Retrieve DckQPF info
             self.dckQpfId  = os.getenv('HOSTNAME')
-            self.dckRunSrc = os.getenv('DCKRUNSRC')
-            self.dckRunTgt = os.getenv('DCKRUNTGT')
+            self.dckQpfWaSrc = os.getenv('DCKQPFWASRC')
+            self.dckQpfWaTgt = os.getenv('DCKQPFWATGT')
 
         #dck_opts = "-i -t"  # Interactive
         dck_opts = "-d -P"  # Daemon mode
@@ -249,7 +249,7 @@ class Processor(object):
 
         # Prepare Docker folder mapping, just in case...
         self.task_dir_img = Processor.QPFDckImageRunPath + "/" + self.task_id
-        self.proc_dir_img = Processor.QPFDckImageProcPath #+ "/" + self.processor
+        self.proc_dir_img = Processor.QPFDckImageProcPath
 
         maps = {'task_dir': [self.task_dir, self.task_dir_img],
                 'proc_dir': [self.proc_dir, self.proc_dir_img]}
@@ -269,8 +269,8 @@ class Processor(object):
         '''
         fldRpl = fld
         if self.alreadyInsideContainer:
-            if fld.startswith(self.dckRunTgt):
-                fldRpl = fld.replace(self.dckRunTgt, self.dckRunSrc)
+            if fld.startswith(self.dckQpfWaTgt):
+                fldRpl = fld.replace(self.dckQpfWaTgt, self.dckQpfWaSrc)
 
         return fldRpl
 
